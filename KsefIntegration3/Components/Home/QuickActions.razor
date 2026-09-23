@@ -1,0 +1,72 @@
+﻿<RadzenCard Variant="Variant.Filled" Class="rz-p-4 rz-mb-4">
+    <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-color-primary rz-font-weight-bold rz-mb-3">
+        Szybkie akcje
+    </RadzenText>
+
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeSM="6" SizeMD="3">
+            <RadzenButton Text="Wystaw fakturę" Icon="add" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Filled" Style="width: 100%; height: 42px;" Click="@OpenInvoiceDialog" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeSM="6" SizeMD="3">
+            <RadzenButton Text="Dodaj towar / usługę" Icon="playlist_add" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Flat" Style="width: 100%; height: 42px;" Click="@OpenItemDialog" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeSM="6" SizeMD="3">
+            <RadzenButton Text="Dodaj kontrahenta" Icon="person_add" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Flat" Style="width: 100%; height: 42px;" Click="@OpenContractorDialog" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeSM="6" SizeMD="3">
+            <RadzenButton Text="Wszystkie faktury" Icon="receipt_long" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Style="width: 100%; height: 42px;" Click="@GoToInvoices" />
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenCard>
+
+@code {
+    private async Task OpenInvoiceDialog()
+    {
+        var result = await DialogService.OpenAsync<InvoiceFormDialog>(
+            "Nowa faktura sprzedażowa",
+            null,
+            new DialogOptions { Width = "1100px" }
+        );
+
+        if (result == true)
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Sukces", "Faktura została zapisana.");
+        }
+    }
+
+    private async Task OpenItemDialog()
+    {
+        var result = await DialogService.OpenAsync<ItemFormDialog>(
+            "Nowa pozycja w cenniku",
+            null,
+            new DialogOptions { Width = "500px" }
+        );
+
+        if (result == true)
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Zapisano", "Nowy towar/usługa został dodany do cennika.");
+        }
+    }
+
+    private async Task OpenContractorDialog()
+    {
+        var result = await DialogService.OpenAsync<ContractorFormDialog>(
+            "Nowy kontrahent",
+            null,
+            new DialogOptions { Width = "650px" }
+        );
+
+        if (result == true)
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Zapisano", "Nowy kontrahent został dodany.");
+        }
+    }
+
+    private void GoToInvoices()
+    {
+        NavigationManager.NavigateTo("/faktury");
+    }
+}

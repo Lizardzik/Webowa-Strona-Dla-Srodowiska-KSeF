@@ -1,0 +1,106 @@
+﻿@page "/faktury"
+@page "/faktury/sprzedaz"
+
+<PageTitle>Faktury sprzedażowe - Ski Control</PageTitle>
+
+<RadzenStack Gap="1.5rem">
+    <PageHeader Title="Faktury sprzedażowe"
+                Subtitle="Lista dokumentów wystawionych dla Twoich kontrahentów"
+                ButtonText="Wystaw fakturę"
+                ButtonIcon="add"
+                OnButtonClick="@OpenInvoiceDialog" />
+
+    <InvoicesFilter @ref="filterRef"
+                    @bind-SearchQuery="@searchQuery"
+                    @bind-SelectedPreset="@selectedPreset"
+                    @bind-DateFrom="@dateFrom"
+                    @bind-DateTo="@dateTo"
+                    @bind-OnlyCorrections="@onlyCorrections"
+                    @bind-OnlyUnpaid="@onlyUnpaid"
+                    OnFilterChanged="@OnFilterChanged" />
+
+    <InvoicesTable @ref="tableRef"
+                   @bind-SearchQuery="@searchQuery"
+                   SelectedPreset="@selectedPreset"
+                   DateFrom="@dateFrom"
+                   DateTo="@dateTo"
+                   @bind-OnlyCorrections="@onlyCorrections"
+                   OnlyUnpaid="@onlyUnpaid"
+                   OnFilterChanged="@OnFilterChanged" />
+</RadzenStack>
+
+@code {
+    [SupplyParameterFromQuery(Name = "search")] public string? UrlSearch { get; set; }
+    [SupplyParameterFromQuery(Name = "corrections")] public bool? UrlCorrections { get; set; }
+
+    private InvoicesFilter? filterRef;
+    private InvoicesTable? tableRef;
+
+    private string searchQuery = string.Empty;
+    private string selectedPreset = "Wszystkie";
+    private DateTime? dateFrom;
+    private DateTime? dateTo;
+    private bool onlyCorrections;
+    private bool onlyUnpaid;
+
+    private string? previousUrlSearch;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(UrlSearch) && UrlSearch != previousUrlSearch)
+        {
+            previousUrlSearch = UrlSearch;
+            searchQuery = UrlSearch;
+            onlyCorrections = UrlCorrections ?? false;
+
+            if (filterRef != null)
+            {
+                filterRef.RefreshUI();
+            }
+
+            if (tableRef != null)
+            {
+                await tableRef.OpenPreviewByNumberAsync(searchQuery);
+            }
+        }
+    }
+
+    private async Task OnFilterChanged()
+    {
+        if (filterRef != null)
+        {
+            filterRef.RefreshUI();
+        }
+
+        StateHasChanged();
+
+        if (tableRef != null)
+        {
+            await tableRef.RefreshDataAsync();
+        }
+    }
+
+    private async Task OpenInvoiceDialog()
+    {
+        var result = await DialogService.OpenAsync<InvoiceFormDialog>(
+            "Nowa faktura sprzedażowa",
+            null,
+            new DialogOptions { Width = "1100px" }
+        );
+
+        if (result == true)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Sukces",
+                Detail = "Faktura została zapisana."
+            });
+
+            if (tableRef != null)
+            {
+                await tableRef.RefreshDataAsync();
+            }
+        }
+    }
+}

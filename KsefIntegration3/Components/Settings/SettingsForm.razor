@@ -1,0 +1,132 @@
+﻿<RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+    <RadzenStack Gap="1.25rem">
+
+        <RadzenText TextStyle="TextStyle.H6" Class="rz-color-primary rz-font-weight-bold rz-m-0">
+            Preferencje i Wygląd
+        </RadzenText>
+        <RadzenDivider Class="rz-my-1" />
+
+        <!-- CIEMNY MOTYW -->
+        <RadzenRow AlignItems="AlignItems.Center">
+            <RadzenColumn Size="12" SizeMD="8">
+                <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-m-0 rz-font-weight-bold">Ciemny motyw</RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Zmienia wygląd aplikacji na ciemny.</RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4" Class="rz-text-align-right">
+                <RadzenSwitch @bind-Value="@model.IsDarkMode" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDivider Class="rz-my-1" />
+
+        <!-- STRONA STARTOWA -->
+        <RadzenRow AlignItems="AlignItems.Center">
+            <RadzenColumn Size="12" SizeMD="8">
+                <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-m-0 rz-font-weight-bold">Strona startowa</RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Wybierz ekran widoczny po uruchomieniu programu.</RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenDropDown @bind-Value="@model.StartupPage" Data="@startupPages" ValueProperty="Key" TextProperty="Value" Style="width: 100%;" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDivider Class="rz-my-1" />
+
+        <!-- ROZMIAR TABEL -->
+        <RadzenRow AlignItems="AlignItems.Center">
+            <RadzenColumn Size="12" SizeMD="8">
+                <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-m-0 rz-font-weight-bold">Rozmiar tabel</RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Domyślna liczba wierszy wyświetlana na listach.</RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenDropDown @bind-Value="@model.DefaultPageSize" Data="@pageSizes" Style="width: 100%;" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDivider Class="rz-my-1" />
+
+        <!-- CZAS POWIADOMIEŃ -->
+        <RadzenRow AlignItems="AlignItems.Center">
+            <RadzenColumn Size="12" SizeMD="8">
+                <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-m-0 rz-font-weight-bold">Czas powiadomień (sekundy)</RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Ile sekund mają wyświetlać się dymki informacyjne.</RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenNumeric @bind-Value="@durationInSeconds" Min="1" Max="15" Style="width: 100%;" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-mt-3">
+            <RadzenButton Text="Zapisz ustawienia" Icon="save" ButtonStyle="ButtonStyle.Primary" Click="@SaveData" />
+        </RadzenStack>
+
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    private AppSettings model = new();
+    private static bool isSettingsLoaded = false;
+
+    private int durationInSeconds
+    {
+        get => (int)(model.NotificationDuration / 1000);
+        set => model.NotificationDuration = value * 1000;
+    }
+
+    private List<int> pageSizes = new() { 10, 15, 25, 50 };
+    private Dictionary<string, string> startupPages = new()
+    {
+        { "/pulpit", "Pulpit główny" },
+        { "/faktury", "Lista faktur" },
+        { "/pozycje", "Lista towarów" },
+        { "/kontrahenci", "Baza kontrahentów" },
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (!isSettingsLoaded)
+            {
+                LoadingService.Show("Ładowanie ustawień...");
+            }
+
+            try
+            {
+                model = await SettingsService.GetSettingsAsync();
+                if (!isSettingsLoaded)
+                {
+                    await Task.Delay(500);
+                }
+            }
+            finally
+            {
+                if (!isSettingsLoaded)
+                {
+                    LoadingService.Hide();
+                    isSettingsLoaded = true;
+                }
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveData()
+    {
+        await LoadingService.WrapWithDelayAsync(async () =>
+        {
+            await SettingsService.SaveSettingsAsync(model);
+            await JSRuntime.InvokeVoidAsync("changeTheme", model.IsDarkMode);
+            SettingsService.NotifyStateChanged();
+        }, 700, "Zapisywanie ustawień...");
+
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = "Zapisano",
+            Detail = "Ustawienia zostały zaktualizowane.",
+            Duration = model.NotificationDuration
+        });
+    }
+}

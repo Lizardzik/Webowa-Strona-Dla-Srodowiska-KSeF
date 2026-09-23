@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="KsefIntegration3/KsefIntegration3.csproj" />
+  <Project Path="Ksef_Forms_DatabaseModelLibrary/KsefIntegration_ModelLibrary.csproj" />
+</Solution>

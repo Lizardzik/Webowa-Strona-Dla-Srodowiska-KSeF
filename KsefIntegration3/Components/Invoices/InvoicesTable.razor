@@ -1,0 +1,448 @@
+﻿<RadzenCard Class="rz-p-4">
+    <RadzenDataGrid Data="@FilteredInvoices"
+                    TItem="Faktura"
+                    AllowSorting="true"
+                    AllowPaging="true"
+                    PageSize="@pageSize"
+                    PagerHorizontalAlignment="HorizontalAlignment.Center"
+                    Class="rz-font-size-md">
+        <EmptyTemplate>
+            <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Class="rz-p-5" Gap="0.75rem">
+                <RadzenIcon Icon="search_off" Style="font-size: 3rem; color: var(--rz-text-color-secondary); opacity: 0.6;" />
+                <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-m-0 rz-font-weight-bold">
+                    Brak danych do wyświetlenia
+                </RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">
+                    Nie znaleziono pozycji spełniających wybrane kryteria lub lista jest pusta.
+                </RadzenText>
+            </RadzenStack>
+        </EmptyTemplate>
+        <Columns>
+            <!-- 1. NUMER FAKTURY / KOREKTY -->
+            <RadzenDataGridColumn Property="Faktura_Numer" Title="@(OnlyCorrections ? "Numer korekty" : "Numer faktury")" Width="170px">
+                <Template Context="faktura">
+                    <strong>@(string.IsNullOrEmpty(faktura.Faktura_Numer) ? $"FV/{faktura.Numer}" : faktura.Faktura_Numer)</strong>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 2. POWIĄZANIA: DOTYCZY DOKUMENTU LUB LISTA KOREKT -->
+            <RadzenDataGridColumn Title="@(OnlyCorrections ? "Dotyczy dokumentu" : "Korekty")" Width="160px" TextAlign="TextAlign.Center">
+                <Template Context="faktura">
+                    @if (OnlyCorrections)
+                    {
+                        var targetInvoice = GetDirectTargetInvoice(faktura);
+                        @if (!string.IsNullOrWhiteSpace(targetInvoice))
+                        {
+                            <a style="cursor: pointer; text-decoration: none; display: inline-block;"
+                               @onclick="@(() => NavigateToInvoice(targetInvoice))"
+                               title="Kliknij, aby przejść i otworzyć dokument korygowany">
+                                <span style="font-size: 0.85rem; font-weight: 600; padding: 3px 9px; border: 1px solid var(--rz-primary); border-radius: 4px; color: var(--rz-primary); background: rgba(var(--rz-primary-rgb), 0.08);">
+                                    @targetInvoice
+                                </span>
+                            </a>
+                        }
+                        else
+                        {
+                            <span style="color: var(--rz-text-color-secondary);">-</span>
+                        }
+                    }
+                    else
+                    {
+                        var corrections = GetIssuedCorrections(faktura);
+                        if (corrections.Any())
+                        {
+                            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="0.25rem">
+                                @foreach (var corrNum in corrections)
+                                {
+                                    <a style="cursor: pointer; text-decoration: none; display: inline-block;"
+                                       @onclick="@(() => NavigateToCorrection(corrNum))"
+                                       title="Kliknij, aby przejść do tej korekty">
+                                        <span style="font-size: 0.85rem; font-weight: 600; padding: 3px 9px; border: 1px solid var(--rz-primary); border-radius: 4px; color: var(--rz-primary); background: rgba(var(--rz-primary-rgb), 0.08);">
+                                            @corrNum
+                                        </span>
+                                    </a>
+                                }
+                            </RadzenStack>
+                        }
+                        else
+                        {
+                            <span style="color: var(--rz-text-color-secondary);">-</span>
+                        }
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 3. NABYWCA -->
+            <RadzenDataGridColumn Property="NabywcaDisplayName" Title="Nabywca / Kontrahent">
+                <Template Context="faktura">
+                    <RadzenStack Gap="0">
+                        <strong>@faktura.NabywcaDisplayName</strong>
+                        @if (!string.IsNullOrWhiteSpace(faktura.Nabywca_NIP))
+                        {
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">
+                                NIP: @faktura.Nabywca_NIP
+                            </RadzenText>
+                        }
+                    </RadzenStack>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 4. DATA WYSTAWIENIA -->
+            <RadzenDataGridColumn Property="Data" Title="Data wystawienia" FormatString="{0:yyyy-MM-dd}" Width="120px" />
+
+            <!-- 5. KWOTA BRUTTO -->
+            <RadzenDataGridColumn Property="Kwota" Title="Kwota brutto" Width="120px" TextAlign="TextAlign.Right">
+                <Template Context="faktura">
+                    <strong>@FormatPLN(faktura.Kwota)</strong>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 6. METADANE KSEF -->
+            <RadzenDataGridColumn Title="KSeF Status" Width="160px" TextAlign="TextAlign.Center">
+                <Template Context="faktura">
+                    @{
+                        ksefDataDict.TryGetValue(faktura.Guid, out var ksefInfo);
+                    }
+                    @if (ksefInfo != null && !string.IsNullOrEmpty(ksefInfo.Resp_ksefNumber))
+                    {
+                        <RadzenStack Gap="0" AlignItems="AlignItems.Center" Title="@($"Nr KSeF: {ksefInfo.Resp_ksefNumber}")">
+                            <span style="color: #2e7d32; font-weight: 600; font-size: 0.85rem;">Przyjęto w KSeF</span>
+                            <span style="font-size: 0.75rem; color: var(--rz-text-color-secondary);">
+                                @(DateTime.TryParse(ksefInfo.Resp_acquisitionDate, out var dateVal) ? dateVal.ToString("dd.MM HH:mm") : ksefInfo.CreateTimeStamp.ToString("dd.MM HH:mm"))
+                            </span>
+                        </RadzenStack>
+                    }
+                    else
+                    {
+                        <span style="font-size: 0.85rem; color: var(--rz-text-color-secondary);">Niewysłano</span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 7. STATUS PŁATNOŚCI -->
+            <RadzenDataGridColumn TItem="Faktura" Title="Płatność" Width="110px" TextAlign="TextAlign.Center">
+                <Template Context="faktura">
+                    @{
+                        var isOverdue = faktura.Platnosc_Termin.HasValue &&
+                                        faktura.Data.AddDays(faktura.Platnosc_Termin.Value) < DateTime.Now;
+                    }
+                    @if (isOverdue)
+                    {
+                        <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Po terminie" IsPill="true" />
+                    }
+                    else
+                    {
+                        <span style="font-size: 0.85rem; color: var(--rz-text-color-secondary);">W terminie</span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 8. AKCJE -->
+            <RadzenDataGridColumn TItem="Faktura" Title="Akcje" Width="170px" Sortable="false" TextAlign="TextAlign.Center">
+                <Template Context="faktura">
+                    @{
+                        bool isLatestInChain = IsLatestDocumentInChain(faktura);
+                        bool isSentToKsef = ksefDataDict.TryGetValue(faktura.Guid, out var ksef) && !string.IsNullOrEmpty(ksef.Resp_ksefNumber);
+                    }
+                    <div class="rz-text-align-center">
+                        <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Size="ButtonSize.Small" Class="rz-me-1" Title="Podgląd" Click="@(() => ShowPreview(faktura))" />
+                        <RadzenButton Icon="picture_as_pdf" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Size="ButtonSize.Small" Class="rz-me-1" Title="Pobierz / Drukuj PDF" Click="@(() => OpenPdf(faktura))" IsBusy="@isGeneratingPdf" />
+                        
+                        @if (!isSentToKsef)
+                        {
+                            <RadzenButton Icon="cloud_upload" 
+                                          ButtonStyle="ButtonStyle.Info" 
+                                          Variant="Variant.Flat" 
+                                          Size="ButtonSize.Small" 
+                                          Class="rz-me-1" 
+                                          Title="Wyślij ponownie do KSeF" 
+                                          Click="@(() => ResendToKsef(faktura))" />
+                        }
+
+                        <RadzenButton Icon="edit"
+                                      ButtonStyle="ButtonStyle.Warning"
+                                      Variant="Variant.Flat"
+                                      Size="ButtonSize.Small"
+                                      Disabled="@(!isLatestInChain)"
+                                      Title="@(isLatestInChain ? "Wystaw korektę do tego dokumentu" : "Dokument posiada już nowszą korektę w łańcuchu")"
+                                      Click="@(() => OpenCorrectionModal(faktura))" />
+                    </div>
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-mt-2">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary">
+            Wyświetlanie <strong>@pageSize</strong> wierszy na stronę
+        </RadzenText>
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    [Parameter] public string SearchQuery { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SearchQueryChanged { get; set; }
+
+    [Parameter] public string SelectedPreset { get; set; } = "Wszystkie";
+    [Parameter] public DateTime? DateFrom { get; set; }
+    [Parameter] public DateTime? DateTo { get; set; }
+
+    [Parameter] public bool OnlyCorrections { get; set; }
+    [Parameter] public EventCallback<bool> OnlyCorrectionsChanged { get; set; }
+
+    [Parameter] public bool OnlyUnpaid { get; set; }
+    [Parameter] public EventCallback OnFilterChanged { get; set; }
+
+    private int pageSize;
+    private bool isGeneratingPdf = false;
+    private List<Faktura> allInvoices = new();
+    private Dictionary<Guid, KsefFaktura> ksefDataDict = new();
+    private bool isInitialLoad = true;
+    private static bool isInvoicesLoaded = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var settings = await PreferencesService.GetSettingsAsync();
+            if (settings != null && settings.DefaultPageSize > 0)
+            {
+                pageSize = settings.DefaultPageSize;
+            }
+        }
+        catch
+        {
+            // fallback
+        }
+
+        await RefreshDataAsync();
+    }
+
+    public async Task RefreshDataAsync()
+    {
+        if (!isInvoicesLoaded)
+        {
+            LoadingService.Show("Pobieranie listy faktur...");
+        }
+
+        try
+        {
+            allInvoices = await FakturaService.GetInvoicesAsync();
+            if (!isInvoicesLoaded)
+            {
+                await Task.Delay(500);
+            }
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            var allGuids = allInvoices.Select(i => i.Guid).ToList();
+            var ksefList = await context.KsefFaktury
+                .Where(k => allGuids.Contains(k.Faktura_Guid))
+                .ToListAsync();
+
+            ksefDataDict = ksefList
+                .GroupBy(k => k.Faktura_Guid)
+                .ToDictionary(g => g.Key, g => g.First());
+        }
+        finally
+        {
+            if (!isInvoicesLoaded)
+            {
+                LoadingService.Hide();
+                isInvoicesLoaded = true;
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ResendToKsef(Faktura faktura)
+    {
+        bool? confirm = await DialogService.Confirm(
+            $"Czy chcesz ponownie przesłać fakturę {faktura.Faktura_Numer} do bramki KSeF?",
+            "Wysyłka do KSeF",
+            new ConfirmOptions { OkButtonText = "Tak, wyślij", CancelButtonText = "Anuluj" }
+        );
+
+        if (confirm == true)
+        {
+            LoadingService.Show("Wysyłanie faktury do KSeF...");
+            try
+            {
+                var success = await FakturaService.ResendToKsefAsync(faktura.Guid);
+                if (success)
+                {
+                    NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "KSeF",
+                        Detail = "Faktura została przekazana do bramki KSeF."
+                    });
+                    await RefreshDataAsync();
+                }
+                else
+                {
+                    NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "KSeF",
+                        Detail = "Błąd podczas próby wysyłki do KSeF."
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Błąd",
+                    Detail = ex.Message
+                });
+            }
+            finally
+            {
+                LoadingService.Hide();
+            }
+        }
+    }
+
+    private bool IsCorrection(Faktura f)
+    {
+        return f.Faktura_Typ == 1 || (f.Faktura_Numer != null && f.Faktura_Numer.Contains("FK"));
+    }
+
+    private bool IsLatestDocumentInChain(Faktura f)
+    {
+        return !allInvoices.Any(i => IsCorrection(i) && (i.oGuid == f.Guid || (!string.IsNullOrWhiteSpace(i.Faktura_Uwagi) && i.Faktura_Uwagi.Contains(f.Faktura_Numer))));
+    }
+
+    private string GetDirectTargetInvoice(Faktura f)
+    {
+        if (f.oGuid.HasValue)
+        {
+            var direct = allInvoices.FirstOrDefault(x => x.Guid == f.oGuid.Value);
+            if (direct != null) return direct.Faktura_Numer;
+        }
+
+        if (!string.IsNullOrWhiteSpace(f.Faktura_Uwagi) && f.Faktura_Uwagi.Contains("Korekta do faktury nr "))
+        {
+            var part = f.Faktura_Uwagi.Split("Korekta do faktury nr ")[1];
+            return part.Split(' ')[0].Trim();
+        }
+
+        return string.Empty;
+    }
+
+    private List<string> GetIssuedCorrections(Faktura f)
+    {
+        return allInvoices
+            .Where(i => IsCorrection(i) && (i.oGuid == f.Guid || (!string.IsNullOrWhiteSpace(i.Faktura_Uwagi) && i.Faktura_Uwagi.Contains(f.Faktura_Numer))))
+            .Select(i => i.Faktura_Numer)
+            .Distinct()
+            .ToList();
+    }
+
+    private IEnumerable<Faktura> FilteredInvoices
+    {
+        get
+        {
+            var query = allInvoices
+                .OrderByDescending(i => i.Data)
+                .ThenByDescending(i => i.Faktura_Data)
+                .AsEnumerable();
+
+            if (OnlyCorrections)
+                query = query.Where(i => IsCorrection(i));
+            else
+                query = query.Where(i => !IsCorrection(i));
+
+            if (!string.IsNullOrWhiteSpace(SearchQuery))
+            {
+                query = query.Where(i =>
+                    (!string.IsNullOrEmpty(i.Faktura_Numer) && i.Faktura_Numer.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(i.Nabywca_Nazwa) && i.Nabywca_Nazwa.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(i.Nabywca_NIP) && i.Nabywca_NIP.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase))
+                );
+            }
+
+            if (SelectedPreset != "Wszystkie")
+            {
+                if (DateFrom.HasValue) query = query.Where(i => i.Data.Date >= DateFrom.Value.Date);
+                if (DateTo.HasValue) query = query.Where(i => i.Data.Date <= DateTo.Value.Date);
+            }
+
+            if (OnlyUnpaid)
+            {
+                query = query.Where(i => i.Platnosc_Termin.HasValue && i.Data.AddDays(i.Platnosc_Termin.Value) < DateTime.Now);
+            }
+
+            return query;
+        }
+    }
+
+    private async Task ShowPreview(Faktura faktura)
+    {
+        await DialogService.OpenAsync<InvoicePreviewDialog>(
+            $"Podgląd dokumentu: {faktura.Faktura_Numer}",
+            new Dictionary<string, object> { { "Faktura", faktura } },
+            new DialogOptions { Width = "800px" }
+        );
+    }
+
+    private async Task OpenPdf(Faktura faktura)
+    {
+        isGeneratingPdf = true;
+        try
+        {
+            var positions = await FakturaService.GetInvoicePositionsAsync(faktura.Guid);
+            var pdfStream = await DokumentyService.GeneratePdfAsync(faktura, positions);
+            using var jsStream = new DotNetStreamReference(pdfStream);
+            await JSRuntime.InvokeVoidAsync("openPdfInNewTab", jsStream);
+        }
+        finally
+        {
+            isGeneratingPdf = false;
+        }
+    }
+
+    private async Task OpenCorrectionModal(Faktura faktura)
+    {
+        var correctionResult = await DialogService.OpenAsync<InvoiceFormDialog>(
+            $"Korekta do dokumentu {faktura.Faktura_Numer}",
+            new Dictionary<string, object> { { "CorrectedInvoice", faktura } },
+            new DialogOptions { Width = "1100px" }
+        );
+
+        if (correctionResult == true)
+        {
+            await RefreshDataAsync();
+        }
+    }
+
+    private async Task NavigateToCorrection(string correctionNumber)
+    {
+        OnlyCorrections = true;
+        await OnlyCorrectionsChanged.InvokeAsync(true);
+        SearchQuery = correctionNumber;
+        await SearchQueryChanged.InvokeAsync(correctionNumber);
+        await OnFilterChanged.InvokeAsync();
+    }
+
+    private async Task NavigateToInvoice(string invoiceNumber)
+    {
+        OnlyCorrections = false;
+        await OnlyCorrectionsChanged.InvokeAsync(false);
+        SearchQuery = invoiceNumber;
+        await SearchQueryChanged.InvokeAsync(invoiceNumber);
+        await OnFilterChanged.InvokeAsync();
+    }
+
+    public async Task OpenPreviewByNumberAsync(string number)
+    {
+        var targetDoc = allInvoices.FirstOrDefault(i => string.Equals(i.Faktura_Numer, number, StringComparison.OrdinalIgnoreCase));
+        if (targetDoc != null)
+        {
+            await ShowPreview(targetDoc);
+        }
+    }
+
+    private string FormatPLN(decimal kwota) => $"{kwota:N2}\u00A0zł";
+}

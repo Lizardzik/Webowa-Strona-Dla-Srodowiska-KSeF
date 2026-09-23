@@ -1,0 +1,17 @@
+﻿<RadzenCard Class="rz-p-4 rz-mb-4">
+    @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-text-secondary rz-mb-3 rz-d-flex rz-align-items-center">
+            <RadzenIcon Icon="filter_alt" Style="font-size: 1.2rem; margin-right: 0.25rem;" />
+            @Title
+        </RadzenText>
+    }
+
+    @ChildContent
+</RadzenCard>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Filtrowanie i wyszukiwanie";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

@@ -1,0 +1,1410 @@
+﻿<RadzenStack Gap="1.5rem" Class="rz-p-2" Style="max-height: 85vh; overflow-y: auto;">
+
+    @if (CorrectedInvoice != null)
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" Title="Dokument korygujący" Class="rz-m-0">
+            Wystawiasz korektę do faktury <strong>@CorrectedInvoice.Faktura_Numer</strong> z dnia @CorrectedInvoice.Faktura_Data.ToString("dd.MM.yyyy").
+        </RadzenAlert>
+    }
+
+    <!-- SEKCJA 1: DANE PODSTAWOWE I SPRZEDAWCA -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+        <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-color-primary rz-m-0 rz-font-weight-bold">
+            Dane Podstawowe i Sprzedawca
+        </RadzenText>
+        <RadzenDivider Class="rz-my-2" />
+        
+        <RadzenRow Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Numer dokumentu</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Faktura_Numer" Disabled="true" Style="width: 100%; opacity: 0.7;" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Data wystawienia</RadzenText>
+                <RadzenDatePicker @bind-Value="@model.Faktura_Data" DateFormat="dd.MM.yyyy" Max="@DateTime.Today" Style="width: 100%;" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Data sprzedaży</RadzenText>
+                <RadzenDatePicker @bind-Value="@model.Usluga_Data" DateFormat="dd.MM.yyyy" Max="@DateTime.Today" Style="@GetHighlightStyle(model.Usluga_Data != CorrectedInvoice?.Usluga_Data)" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenRow Gap="1rem" Class="rz-mt-2">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Nazwa firmy sprzedawcy</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Sprzedawca_Nazwa" Style="width: 100%;" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">NIP sprzedawcy</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Sprzedawca_NIP"
+                               Style="@(CorrectedInvoice != null ? "width: 100%; opacity: 0.6; cursor: not-allowed;" : "width: 100%;")"
+                               Disabled="@(CorrectedInvoice != null)" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenRow Gap="1rem" Class="rz-mt-2">
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Miejsce wystawienia</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Faktura_MiejsceWystawienia" Style="@GetHighlightStyle(model.Faktura_MiejsceWystawienia != CorrectedInvoice?.Faktura_MiejsceWystawienia)" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Forma płatności</RadzenText>
+                <RadzenDropDown @bind-Value="@model.Platnosc_Nazwa" Data="@paymentMethods" Style="@GetHighlightStyle(model.Platnosc_Nazwa != CorrectedInvoice?.Platnosc_Nazwa)" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Termin płatności</RadzenText>
+                <RadzenNumeric TValue="int?" @bind-Value="@model.Platnosc_Termin" Min="0" Style="@GetHighlightStyle(model.Platnosc_Termin != CorrectedInvoice?.Platnosc_Termin)" />
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    <!-- SEKCJA 2: DANE NABYWCY I ODBIORCY -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+            <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-color-primary rz-m-0 rz-font-weight-bold">
+                Dane Nabywcy
+            </RadzenText>
+            @if (CorrectedInvoice == null)
+            {
+                <RadzenCard Variant="Variant.Outlined" Class="rz-px-3 rz-py-1 rz-m-0">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <RadzenCheckBox @bind-Value="@isBuyerPerson" Name="cbBuyerPerson" TValue="bool" Change="@OnBuyerTypeChanged" />
+                        <RadzenLabel Text="Osoba fizyczna" Component="cbBuyerPerson" Class="rz-font-weight-bold" Style="cursor: pointer; font-size: 0.9rem;" />
+                    </RadzenStack>
+                </RadzenCard>
+            }
+        </RadzenStack>
+        <RadzenDivider Class="rz-my-2" />
+
+        @if (CorrectedInvoice == null)
+        {
+            <RadzenRow Gap="1rem" AlignItems="AlignItems.End" Class="rz-mb-2">
+                <RadzenColumn Size="12" SizeMD="@(isBuyerPerson ? 12 : 9)">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">
+                        @(isBuyerPerson ? "Wybierz osobę z bazy kontrahentów" : "Wybierz firmę z bazy kontrahentów")
+                    </RadzenText>
+                    <RadzenDropDown TValue="Kontrahent" Data="@BuyerContractorsList" TextProperty="DisplayName"
+                                    Value="@selectedContractor" Change="@OnContractorSelected"
+                                    Placeholder="Wybierz z listy kontrahentów..." Style="width: 100%;" AllowClear="true" />
+                </RadzenColumn>
+                @if (!isBuyerPerson)
+                {
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenButton Text="Pobierz z GUS" Icon="search" ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@FetchGusForBuyer" IsBusy="@isLoadingGus" Style="width: 100%; height: 38px;" />
+                    </RadzenColumn>
+                }
+            </RadzenRow>
+        }
+
+        <RadzenRow Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="@(isBuyerPerson ? 12 : 7)">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">
+                    @(isBuyerPerson ? "Imię i nazwisko nabywcy" : "Nazwa nabywcy")
+                </RadzenText>
+                <RadzenTextBox @bind-Value="@model.Nabywca_Nazwa" Placeholder="@(isBuyerPerson ? "Jan Kowalski" : "Tatry Ski Corp")" Style="@GetHighlightStyle(model.Nabywca_Nazwa != CorrectedInvoice?.Nabywca_Nazwa)" />
+            </RadzenColumn>
+            @if (!isBuyerPerson)
+            {
+                <RadzenColumn Size="12" SizeMD="5">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">
+                        NIP nabywcy
+                    </RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Nabywca_NIP"
+                                   Placeholder="10 cyfr NIP"
+                                   Style="@(CorrectedInvoice != null ? "width: 100%; opacity: 0.6; cursor: not-allowed;" : "width: 100%;")"
+                                   Disabled="@(CorrectedInvoice != null)" />
+                </RadzenColumn>
+            }
+        </RadzenRow>
+
+        <RadzenRow Gap="1rem" Class="rz-mt-2">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Ulica</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Nabywca_Ulica" Placeholder="Krupówki" Style="@GetHighlightStyle(model.Nabywca_Ulica != CorrectedInvoice?.Nabywca_Ulica)" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Numer domu</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Nabywca_UlicaNumer" Placeholder="12A" Style="@GetHighlightStyle(model.Nabywca_UlicaNumer != CorrectedInvoice?.Nabywca_UlicaNumer)" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenRow Gap="1rem" Class="rz-mt-2">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Kod pocztowy</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Nabywca_KodPocztowy" Placeholder="34-500" Style="@GetHighlightStyle(model.Nabywca_KodPocztowy != CorrectedInvoice?.Nabywca_KodPocztowy)" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Miejscowość</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Nabywca_Miejscowosc" Placeholder="Zakopane" Style="@GetHighlightStyle(model.Nabywca_Miejscowosc != CorrectedInvoice?.Nabywca_Miejscowosc)" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <!-- PRZEŁĄCZNIK ODBIORCY -->
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Class="rz-mt-3">
+            <RadzenCheckBox @bind-Value="@hasDifferentRecipient" Name="cbRecipient" TValue="bool" Change="@OnHasRecipientToggle" Disabled="@(CorrectedInvoice != null)" />
+            <RadzenLabel Text="Inny odbiorca na fakturze" Component="cbRecipient" Class="rz-font-weight-bold" Style="cursor: pointer;" />
+        </RadzenStack>
+
+        @if (hasDifferentRecipient)
+        {
+            <RadzenCard Variant="Variant.Outlined" Class="rz-mt-3 rz-p-3" Style="border: 1px dashed var(--rz-primary);">
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                    <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-primary rz-m-0 rz-font-weight-bold">
+                        Dane Odbiorcy
+                    </RadzenText>
+                    @if (CorrectedInvoice == null)
+                    {
+                        <RadzenCard Variant="Variant.Outlined" Class="rz-px-3 rz-py-1 rz-m-0">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                <RadzenCheckBox @bind-Value="@isRecipientPerson" Name="cbRecipPerson" TValue="bool" Change="@OnRecipientTypeChanged" />
+                                <RadzenLabel Text="Osoba fizyczna" Component="cbRecipPerson" Class="rz-font-weight-bold" Style="cursor: pointer; font-size: 0.9rem;" />
+                            </RadzenStack>
+                        </RadzenCard>
+                    }
+                </RadzenStack>
+                <RadzenDivider Class="rz-my-2" />
+
+                @if (CorrectedInvoice == null)
+                {
+                    <RadzenRow Gap="1rem" AlignItems="AlignItems.End" Class="rz-mb-2">
+                        <RadzenColumn Size="12" SizeMD="@(isRecipientPerson ? 12 : 9)">
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">
+                                @(isRecipientPerson ? "Wybierz odbiorcę z bazy kontrahentów" : "Wybierz odbiorcę z bazy firm")
+                            </RadzenText>
+                            <RadzenDropDown TValue="Kontrahent" Data="@RecipientContractorsList" TextProperty="DisplayName"
+                                            Value="@selectedRecipient" Change="@OnRecipientSelected"
+                                            Placeholder="Wybierz odbiorcę..." Style="width: 100%;" AllowClear="true" />
+                        </RadzenColumn>
+                        @if (!isRecipientPerson)
+                        {
+                            <RadzenColumn Size="12" SizeMD="3">
+                                <RadzenButton Text="Pobierz z GUS" Icon="search" ButtonStyle="ButtonStyle.Secondary"
+                                              Click="@FetchGusForRecipient" IsBusy="@isLoadingGusRecipient" Style="width: 100%; height: 38px;" />
+                            </RadzenColumn>
+                        }
+                    </RadzenRow>
+                }
+
+                <RadzenRow Gap="1rem">
+                    <RadzenColumn Size="12" SizeMD="@(isRecipientPerson ? 12 : 7)">
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">
+                            @(isRecipientPerson ? "Imię i nazwisko odbiorcy" : "Nazwa odbiorcy")
+                        </RadzenText>
+                        <RadzenTextBox @bind-Value="@model.Odbiorca_Nazwa" Placeholder="@(isRecipientPerson ? "Anna Nowak" : "Oddział Zakopane")" Style="@GetHighlightStyle(model.Odbiorca_Nazwa != CorrectedInvoice?.Odbiorca_Nazwa)" />
+                    </RadzenColumn>
+                    @if (!isRecipientPerson)
+                    {
+                        <RadzenColumn Size="12" SizeMD="5">
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">
+                                NIP odbiorcy
+                            </RadzenText>
+                            <RadzenTextBox @bind-Value="@model.Odbiorca_NIP"
+                                           Placeholder="NIP odbiorcy"
+                                           Style="@(CorrectedInvoice != null ? "width: 100%; opacity: 0.6; cursor: not-allowed;" : "width: 100%;")"
+                                           Disabled="@(CorrectedInvoice != null)" />
+                        </RadzenColumn>
+                    }
+                </RadzenRow>
+
+                <RadzenRow Gap="1rem" Class="rz-mt-2">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Ulica</RadzenText>
+                        <RadzenTextBox @bind-Value="@model.Odbiorca_Ulica" Style="@GetHighlightStyle(model.Odbiorca_Ulica != CorrectedInvoice?.Odbiorca_Ulica)" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Numer domu</RadzenText>
+                        <RadzenTextBox @bind-Value="@model.Odbiorca_UlicaNumer" Style="@GetHighlightStyle(model.Odbiorca_UlicaNumer != CorrectedInvoice?.Odbiorca_UlicaNumer)" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenRow Gap="1rem" Class="rz-mt-2">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Kod pocztowy</RadzenText>
+                        <RadzenTextBox @bind-Value="@model.Odbiorca_KodPocztowy" Style="@GetHighlightStyle(model.Odbiorca_KodPocztowy != CorrectedInvoice?.Odbiorca_KodPocztowy)" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Miejscowość</RadzenText>
+                        <RadzenTextBox @bind-Value="@model.Odbiorca_Miejscowosc" Style="@GetHighlightStyle(model.Odbiorca_Miejscowosc != CorrectedInvoice?.Odbiorca_Miejscowosc)" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        }
+    </RadzenCard>
+
+    <!-- SEKCJA 3: POZYCJE FAKTURY -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+            <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-color-primary rz-m-0 rz-font-weight-bold">Pozycje Faktury</RadzenText>
+            <RadzenButton Text="Dodaj pozycję" Icon="add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" Click="@AddPosition" />
+        </RadzenStack>
+        <RadzenDivider Class="rz-my-2" />
+
+        @if (isLoadingPositions)
+        {
+            <RadzenProgressBar Value="100" Mode="ProgressBarMode.Indeterminate" Class="rz-my-2" />
+        }
+        else
+        {
+            <RadzenDataGrid @ref="grid" Data="@pozycjeList" TItem="FakturaPozycja" AllowPaging="false" AllowSorting="false">
+                <Columns>
+                    <RadzenDataGridColumn TItem="FakturaPozycja" Title="Cennik" Width="190px">
+                        <Template Context="item">
+                            <RadzenDropDown TValue="Towary" Data="@itemsList" TextProperty="Nazwa"
+                                            Placeholder="Wybierz towar..." Style="width: 100%;"
+                                            Change="@((object val) => OnDictionaryItemSelect(item, val))" AllowClear="true" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="FakturaPozycja" Title="Nazwa pozycji">
+                        <Template Context="item">
+                            <RadzenTextBox @bind-Value="@item.Pozycja_Nazwa"
+                                           Style="@GetItemHighlightStyle(item, nameof(FakturaPozycja.Pozycja_Nazwa))"
+                                           Placeholder="Opis pozycji..." />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="FakturaPozycja" Title="Ilość" Width="85px" TextAlign="TextAlign.Center">
+                        <Template Context="item">
+                            <RadzenNumeric TValue="int" Value="@item.Pozycja_Ilosc"
+                                           ValueChanged="@((int val) => OnIloscChanged(item, val))"
+                                           Style="@GetItemHighlightStyle(item, nameof(FakturaPozycja.Pozycja_Ilosc))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="FakturaPozycja" Title="Cena Netto" Width="125px" TextAlign="TextAlign.Center">
+                        <Template Context="item">
+                            <RadzenNumeric TValue="decimal" Value="@item.Pozycja_Cena_Netto" Format="N2"
+                                           ValueChanged="@((decimal val) => OnNettoChanged(item, val))"
+                                           Style="@GetItemHighlightStyle(item, nameof(FakturaPozycja.Pozycja_Cena_Netto))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="FakturaPozycja" Title="VAT" Width="95px" TextAlign="TextAlign.Center">
+                        <Template Context="item">
+                            <RadzenDropDown Value="@item.Pozycja_Stawka_VAT" Data="@vatRates"
+                                            ValueChanged="@((string val) => OnVatChanged(item, val))"
+                                            Style="@GetItemHighlightStyle(item, nameof(FakturaPozycja.Pozycja_Stawka_VAT))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="FakturaPozycja" Title="Cena Brutto" Width="125px" TextAlign="TextAlign.Center">
+                        <Template Context="item">
+                            <RadzenNumeric TValue="decimal" Value="@item.Pozycja_Cena_Brutto" Format="N2"
+                                           ValueChanged="@((decimal val) => OnBruttoChanged(item, val))"
+                                           Style="@GetItemHighlightStyle(item, nameof(FakturaPozycja.Pozycja_Cena_Brutto))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="FakturaPozycja" Title="Wartość Cała" Width="135px" TextAlign="TextAlign.Center">
+                        <Template Context="item">
+                            <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0"><strong>@item.Pozycja_Wartosc_B.ToString("N2") zł</strong></RadzenText>
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="FakturaPozycja" Title="" Width="50px" TextAlign="TextAlign.Center">
+                        <Template Context="item">
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => RemovePosition(item))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </RadzenCard>
+
+    <!-- SEKCJA 4: PODSUMOWANIE I UWAGI -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+        <RadzenRow Gap="1.5rem">
+            <RadzenColumn Size="12" SizeMD="7">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">
+                    @(CorrectedInvoice != null ? "Przyczyna korekty" : "Uwagi do faktury")
+                </RadzenText>
+                <RadzenTextArea @bind-Value="@model.Faktura_Uwagi" Rows="4" Style="@GetHighlightStyle(model.Faktura_Uwagi != CorrectedInvoice?.Faktura_Uwagi, "width: 100%;")" Placeholder="@(CorrectedInvoice != null ? "Wpisz powód wystawienia korekty..." : "Dodatkowe informacje na fakturze...")" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="5">
+                <RadzenCard Variant="Variant.Outlined" Class="rz-p-3" Style="height: 100%; display: flex; flex-direction: column; justify-content: space-around;">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-text-secondary rz-m-0">Suma Netto:</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0 rz-font-weight-bold">@SumaNetto.ToString("N2") zł</RadzenText>
+                    </RadzenStack>
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-text-secondary rz-m-0">Suma VAT:</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0 rz-font-weight-bold">@SumaVat.ToString("N2") zł</RadzenText>
+                    </RadzenStack>
+                    <RadzenDivider Class="rz-my-1" />
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.H6" Class="rz-color-primary rz-m-0 rz-font-weight-bold">Razem Brutto:</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H6" Class="rz-color-primary rz-m-0 rz-font-weight-bold">@SumaBrutto.ToString("N2") zł</RadzenText>
+                    </RadzenStack>
+                </RadzenCard>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    <!-- PRZYCISKI AKCJI -->
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-pt-2" Gap="1rem">
+        <RadzenButton Text="Anuluj" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Click="@Cancel" />
+        <RadzenButton Text="@(CorrectedInvoice != null ? "Zapisz i wyślij korektę do KSeF" : "Zapisz i wyślij fakturę do KSeF")"
+                      Icon="cloud_upload" ButtonStyle="@(CorrectedInvoice != null ? ButtonStyle.Warning : ButtonStyle.Primary)" Click="@Save" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public Faktura? CorrectedInvoice { get; set; }
+
+    private RadzenDataGrid<FakturaPozycja>? grid;
+    private Faktura model = new();
+    private List<FakturaPozycja> pozycjeList = new();
+    private List<FakturaPozycja> originalPositionsSnapshot = new();
+
+    private List<Kontrahent> contractorsList = new();
+    private Kontrahent? selectedContractor;
+    private Kontrahent? selectedRecipient;
+
+    private List<Towary> itemsList = new();
+
+    private bool isBuyerPerson = false;
+    private bool isRecipientPerson = false;
+    private bool isLoadingGus = false;
+    private bool isLoadingGusRecipient = false;
+    private bool isLoadingPositions = false;
+    private bool isSaving = false;
+    private bool hasDifferentRecipient = false;
+
+    private List<string> paymentMethods = new() { "Przelew", "Gotówka", "Karta", "Kompensata" };
+    private List<string> vatRates = new() { "23%", "8%", "5%", "0%", "zw" };
+
+    private IEnumerable<Kontrahent> BuyerContractorsList => contractorsList.Where(k => isBuyerPerson ? (k.Typ == "Osoba fizyczna" || k.Kontrahent_Rodzaj == 2) : (k.Typ != "Osoba fizyczna" && k.Kontrahent_Rodzaj != 2));
+    private IEnumerable<Kontrahent> RecipientContractorsList => contractorsList.Where(k => isRecipientPerson ? (k.Typ == "Osoba fizyczna" || k.Kontrahent_Rodzaj == 2) : (k.Typ != "Osoba fizyczna" && k.Kontrahent_Rodzaj != 2));
+
+    private string GetHighlightStyle(bool isChanged, string baseStyle = "width: 100%;")
+    {
+        if (CorrectedInvoice != null && isChanged)
+        {
+            return $"{baseStyle} background-color: #fffde7; border: 1px solid #fbc02d; font-weight: 500;";
+        }
+        return baseStyle;
+    }
+
+    private string GetItemHighlightStyle(FakturaPozycja item, string propertyName)
+    {
+        if (CorrectedInvoice == null) return "width: 100%;";
+
+        int index = pozycjeList.IndexOf(item);
+        if (index < 0 || index >= originalPositionsSnapshot.Count)
+        {
+            return "width: 100%; background-color: #fffde7; border: 1px solid #fbc02d; font-weight: 500;";
+        }
+
+        var orig = originalPositionsSnapshot[index];
+        bool isDiff = propertyName switch
+        {
+            nameof(FakturaPozycja.Pozycja_Nazwa) => item.Pozycja_Nazwa != orig.Pozycja_Nazwa,
+            nameof(FakturaPozycja.Pozycja_Ilosc) => item.Pozycja_Ilosc != orig.Pozycja_Ilosc,
+            nameof(FakturaPozycja.Pozycja_Cena_Netto) => item.Pozycja_Cena_Netto != orig.Pozycja_Cena_Netto,
+            nameof(FakturaPozycja.Pozycja_Cena_Brutto) => item.Pozycja_Cena_Brutto != orig.Pozycja_Cena_Brutto,
+            nameof(FakturaPozycja.Pozycja_Stawka_VAT) => item.Pozycja_Stawka_VAT != orig.Pozycja_Stawka_VAT,
+            _ => false
+        };
+
+        return isDiff ? "width: 100%; background-color: #fffde7; border: 1px solid #fbc02d; font-weight: 500;" : "width: 100%;";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        model.Faktura_Data = DateTime.Now;
+        model.Usluga_Data = DateTime.Now;
+        model.Platnosc_Nazwa = "Przelew";
+        model.Platnosc_Termin = 14;
+
+        var companyConfig = await ConfigurationService.GetConfigurationDataAsync();
+        if (companyConfig != null)
+        {
+            model.Sprzedawca_Nazwa = companyConfig.Sprzedawca_Nazwa;
+            model.Sprzedawca_NIP = companyConfig.Sprzedawca_NIP;
+            model.Sprzedawca_Ulica = companyConfig.Sprzedawca_Ulica;
+            model.Sprzedawca_Numer = companyConfig.Sprzedawca_UlicaNr;
+            model.Sprzedawca_KodPocztowy = companyConfig.Sprzedawca_KodPocztowy;
+            model.Sprzedawca_Miejscowosc = companyConfig.Sprzedawca_Miejscowosc;
+
+            model.Faktura_MiejsceWystawienia = !string.IsNullOrWhiteSpace(companyConfig.Faktura_MiejsceWystawienia)
+                            ? companyConfig.Faktura_MiejsceWystawienia
+                            : companyConfig.Sprzedawca_Miejscowosc;
+        }
+
+        bool isCorr = CorrectedInvoice != null;
+        var (rawNumber, formattedNumber) = await ConfigurationService.GetNextInvoiceNumberDataAsync(isCorr);
+
+        model.Numer = rawNumber;
+        model.Faktura_Numer = formattedNumber;
+
+        if (CorrectedInvoice != null)
+        {
+            model.Faktura_Typ = 1;
+            model.oGuid = CorrectedInvoice.Guid;
+
+            model.Nabywca_Nazwa = CorrectedInvoice.Nabywca_Nazwa;
+            model.Nabywca_NIP = CorrectedInvoice.Nabywca_NIP;
+            model.Nabywca_Ulica = CorrectedInvoice.Nabywca_Ulica;
+            model.Nabywca_UlicaNumer = CorrectedInvoice.Nabywca_UlicaNumer;
+            model.Nabywca_KodPocztowy = CorrectedInvoice.Nabywca_KodPocztowy;
+            model.Nabywca_Miejscowosc = CorrectedInvoice.Nabywca_Miejscowosc;
+
+            model.Odbiorca_Nazwa = CorrectedInvoice.Odbiorca_Nazwa;
+            model.Odbiorca_NIP = CorrectedInvoice.Odbiorca_NIP;
+            model.Odbiorca_Ulica = CorrectedInvoice.Odbiorca_Ulica;
+            model.Odbiorca_UlicaNumer = CorrectedInvoice.Odbiorca_UlicaNumer;
+            model.Odbiorca_KodPocztowy = CorrectedInvoice.Odbiorca_KodPocztowy;
+            model.Odbiorca_Miejscowosc = CorrectedInvoice.Odbiorca_Miejscowosc;
+
+            model.Platnosc_Nazwa = CorrectedInvoice.Platnosc_Nazwa;
+            model.Platnosc_Termin = CorrectedInvoice.Platnosc_Termin;
+            model.Usluga_Data = CorrectedInvoice.Usluga_Data;
+
+            isBuyerPerson = string.IsNullOrWhiteSpace(model.Nabywca_NIP);
+            isRecipientPerson = string.IsNullOrWhiteSpace(model.Odbiorca_NIP);
+            hasDifferentRecipient = !string.IsNullOrWhiteSpace(model.Odbiorca_Nazwa) && model.Odbiorca_Nazwa != model.Nabywca_Nazwa;
+
+            string rootInvoiceNumber = CorrectedInvoice.Faktura_Numer ?? string.Empty;
+            if ((CorrectedInvoice.Faktura_Numer?.Contains("FK") ?? false) || CorrectedInvoice.Faktura_Typ == 1)
+            {
+                if (!string.IsNullOrWhiteSpace(CorrectedInvoice.Faktura_Uwagi) && CorrectedInvoice.Faktura_Uwagi.Contains("Korekta do faktury nr "))
+                {
+                    var parts = CorrectedInvoice.Faktura_Uwagi.Split("Korekta do faktury nr ");
+                    if (parts.Length > 1)
+                    {
+                        rootInvoiceNumber = parts[1].Split(' ')[0].Trim();
+                    }
+                }
+                model.Faktura_Uwagi = $"Korekta do faktury nr {rootInvoiceNumber} (koryguje {CorrectedInvoice.Faktura_Numer})";
+            }
+            else
+            {
+                model.Faktura_Uwagi = $"Korekta do faktury nr {rootInvoiceNumber}";
+            }
+
+            isLoadingPositions = true;
+            StateHasChanged();
+
+            var originalPositions = await FakturaService.GetInvoicePositionsAsync(CorrectedInvoice.Guid);
+            pozycjeList = new List<FakturaPozycja>();
+            originalPositionsSnapshot = new List<FakturaPozycja>();
+
+            foreach (var orig in originalPositions)
+            {
+                string vatStr = string.IsNullOrWhiteSpace(orig.Pozycja_Stawka_VAT) ? "23%" : (orig.Pozycja_Stawka_VAT.EndsWith("%") ? orig.Pozycja_Stawka_VAT : $"{orig.Pozycja_Stawka_VAT}%");
+
+                var snapshotPos = new FakturaPozycja
+                {
+                    Pozycja_Nazwa = orig.Pozycja_Nazwa,
+                    Pozycja_Ilosc = orig.Pozycja_Ilosc,
+                    Pozycja_Cena_Netto = orig.Pozycja_Cena_Netto,
+                    Pozycja_Cena_Brutto = orig.Pozycja_Cena_Brutto,
+                    Pozycja_Stawka_VAT = vatStr
+                };
+                originalPositionsSnapshot.Add(snapshotPos);
+
+                var newPos = new FakturaPozycja
+                {
+                    Guid = Guid.NewGuid(),
+                    Pozycja_Nazwa = orig.Pozycja_Nazwa,
+                    Pozycja_Ilosc = orig.Pozycja_Ilosc,
+                    Pozycja_Cena_Netto = orig.Pozycja_Cena_Netto,
+                    Pozycja_Cena_Brutto = orig.Pozycja_Cena_Brutto,
+                    Pozycja_Stawka_VAT = vatStr,
+                    Towar_Guid = orig.Towar_Guid
+                };
+
+                RecalculateFromNetto(newPos);
+                pozycjeList.Add(newPos);
+                CorrectedInvoice.FakturaPozycje.Add(newPos);
+            }
+
+            isLoadingPositions = false;
+        }
+        else
+        {
+            model.Faktura_Typ = 0;
+            AddPosition();
+        }
+
+        var contractorsTask = KontrahentService.GetContractorsAsync();
+        var itemsTask = TowaryService.GetDictionaryItemsAsync();
+
+        await Task.WhenAll(contractorsTask, itemsTask);
+
+        contractorsList = await contractorsTask;
+        itemsList = await itemsTask;
+    }
+
+    private void OnBuyerTypeChanged(bool val)
+    {
+        isBuyerPerson = val;
+        selectedContractor = null;
+        model.Nabywca_Nazwa = string.Empty;
+        model.Nabywca_NIP = null;
+        model.Nabywca_Ulica = string.Empty;
+        model.Nabywca_UlicaNumer = string.Empty;
+        model.Nabywca_KodPocztowy = string.Empty;
+        model.Nabywca_Miejscowosc = string.Empty;
+    }
+
+    private void OnRecipientTypeChanged(bool val)
+    {
+        isRecipientPerson = val;
+        selectedRecipient = null;
+        model.Odbiorca_Nazwa = string.Empty;
+        model.Odbiorca_NIP = null;
+        model.Odbiorca_Ulica = string.Empty;
+        model.Odbiorca_UlicaNumer = string.Empty;
+        model.Odbiorca_KodPocztowy = string.Empty;
+        model.Odbiorca_Miejscowosc = string.Empty;
+    }
+
+    private void OnHasRecipientToggle(bool val)
+    {
+        hasDifferentRecipient = val;
+        if (!hasDifferentRecipient)
+        {
+            selectedRecipient = null;
+            model.Odbiorca_Nazwa = string.Empty;
+            model.Odbiorca_NIP = null;
+            model.Odbiorca_Ulica = string.Empty;
+            model.Odbiorca_UlicaNumer = string.Empty;
+            model.Odbiorca_KodPocztowy = string.Empty;
+            model.Odbiorca_Miejscowosc = string.Empty;
+        }
+    }
+
+    private void OnContractorSelected(object args)
+    {
+        if (args is Kontrahent k)
+        {
+            selectedContractor = k;
+            model.Nabywca_Nazwa = k.DisplayName;
+            model.Nabywca_NIP = isBuyerPerson ? null : k.NIP;
+            model.Nabywca_Ulica = k.Ulica;
+            model.Nabywca_UlicaNumer = k.NumerDomu;
+            model.Nabywca_KodPocztowy = k.Kod_Pocztowy;
+            model.Nabywca_Miejscowosc = k.Miejscowosc;
+        }
+        else
+        {
+            selectedContractor = null;
+            model.Nabywca_Nazwa = string.Empty;
+            model.Nabywca_NIP = null;
+            model.Nabywca_Ulica = string.Empty;
+            model.Nabywca_UlicaNumer = string.Empty;
+            model.Nabywca_KodPocztowy = string.Empty;
+            model.Nabywca_Miejscowosc = string.Empty;
+        }
+    }
+
+    private void OnRecipientSelected(object args)
+    {
+        if (args is Kontrahent k)
+        {
+            selectedRecipient = k;
+            model.Odbiorca_Nazwa = k.DisplayName;
+            model.Odbiorca_NIP = isRecipientPerson ? null : k.NIP;
+            model.Odbiorca_Ulica = k.Ulica;
+            model.Odbiorca_UlicaNumer = k.NumerDomu;
+            model.Odbiorca_KodPocztowy = k.Kod_Pocztowy;
+            model.Odbiorca_Miejscowosc = k.Miejscowosc;
+        }
+        else
+        {
+            selectedRecipient = null;
+            model.Odbiorca_Nazwa = string.Empty;
+            model.Odbiorca_NIP = null;
+            model.Odbiorca_Ulica = string.Empty;
+            model.Odbiorca_UlicaNumer = string.Empty;
+            model.Odbiorca_KodPocztowy = string.Empty;
+            model.Odbiorca_Miejscowosc = string.Empty;
+        }
+    }
+
+    private async Task OnDictionaryItemSelect(FakturaPozycja position, object args)
+    {
+        if (args is Towary selectedItem)
+        {
+            position.Pozycja_Nazwa = selectedItem.Nazwa;
+            position.Pozycja_Cena_Netto = selectedItem.Cena_Netto ?? 0m;
+            position.Pozycja_Cena_Brutto = selectedItem.Cena_Brutto ?? 0m;
+            position.Pozycja_Stawka_VAT = selectedItem.Stawka_VAT.HasValue ? $"{selectedItem.Stawka_VAT}%" : "zw";
+            position.Towar_Guid = selectedItem.Guid;
+
+            RecalculateFromNetto(position);
+
+            if (grid != null)
+            {
+                await grid.Reload();
+            }
+        }
+    }
+
+    private async Task FetchGusForBuyer()
+    {
+        if (isBuyerPerson) return;
+        isLoadingGus = true;
+
+        if (string.IsNullOrWhiteSpace(model.Nabywca_NIP))
+        {
+            var random = new Random();
+            model.Nabywca_NIP = $"525{random.Next(1000000, 9999999)}";
+        }
+
+        var gusResult = await KontrahentService.FetchFromGusAsync(model.Nabywca_NIP);
+
+        if (gusResult != null)
+        {
+            model.Nabywca_Nazwa = gusResult.Nazwa;
+            model.Nabywca_Ulica = gusResult.Ulica;
+            model.Nabywca_UlicaNumer = gusResult.NumerDomu;
+            model.Nabywca_KodPocztowy = "00-001";
+            model.Nabywca_Miejscowosc = gusResult.Miejscowosc;
+            await PreferencesService.NotifyAsync(NotificationSeverity.Info, "GUS", "Pobrano dane z GUS dla nabywcy.");
+        }
+
+        isLoadingGus = false;
+    }
+
+    private async Task FetchGusForRecipient()
+    {
+        if (isRecipientPerson) return;
+        isLoadingGusRecipient = true;
+
+        if (string.IsNullOrWhiteSpace(model.Odbiorca_NIP))
+        {
+            var random = new Random();
+            model.Odbiorca_NIP = $"525{random.Next(1000000, 9999999)}";
+        }
+
+        var gusResult = await KontrahentService.FetchFromGusAsync(model.Odbiorca_NIP);
+
+        if (gusResult != null)
+        {
+            model.Odbiorca_Nazwa = gusResult.Nazwa;
+            model.Odbiorca_Ulica = gusResult.Ulica;
+            model.Odbiorca_UlicaNumer = gusResult.NumerDomu;
+            model.Odbiorca_KodPocztowy = "00-001";
+            model.Odbiorca_Miejscowosc = gusResult.Miejscowosc;
+            await PreferencesService.NotifyAsync(NotificationSeverity.Info, "GUS", "Pobrano dane z GUS dla odbiorcy.");
+        }
+
+        isLoadingGusRecipient = false;
+    }
+
+    private void AddPosition()
+    {
+        var newPos = new FakturaPozycja
+        {
+            Guid = Guid.NewGuid(),
+            Pozycja_Ilosc = 1,
+            Pozycja_Stawka_VAT = "23%",
+            Pozycja_Nazwa = string.Empty,
+            Pozycja_Cena_Netto = 0m,
+            Pozycja_Cena_Brutto = 0m
+        };
+
+        pozycjeList.Add(newPos);
+
+        if (grid != null)
+        {
+            grid.Reload();
+        }
+    }
+
+    private void RemovePosition(FakturaPozycja item)
+    {
+        if (pozycjeList.Count > 0)
+        {
+            pozycjeList.Remove(item);
+            if (grid != null)
+            {
+                grid.Reload();
+            }
+        }
+    }
+
+    private decimal GetVatMultiplier(string? vatStr)
+    {
+        return vatStr switch
+        {
+            "23%" => 1.23m,
+            "8%" => 1.08m,
+            "5%" => 1.05m,
+            _ => 1.00m
+        };
+    }
+
+    private decimal GetVatRateDecimal(string? vatStr)
+    {
+        return vatStr switch
+        {
+            "23%" => 0.23m,
+            "8%" => 0.08m,
+            "5%" => 0.05m,
+            _ => 0.00m
+        };
+    }
+
+    private void OnNettoChanged(FakturaPozycja item, decimal newNetto)
+    {
+        item.Pozycja_Cena_Netto = newNetto;
+        RecalculateFromNetto(item);
+    }
+
+    private void OnBruttoChanged(FakturaPozycja item, decimal newBrutto)
+    {
+        item.Pozycja_Cena_Brutto = newBrutto;
+        RecalculateFromBrutto(item);
+    }
+
+    private void OnVatChanged(FakturaPozycja item, string newVat)
+    {
+        item.Pozycja_Stawka_VAT = newVat;
+        RecalculateFromNetto(item);
+    }
+
+    private void OnIloscChanged(FakturaPozycja item, int newQty)
+    {
+        item.Pozycja_Ilosc = newQty;
+        RecalculateTotals(item);
+    }
+
+    private void RecalculateFromNetto(FakturaPozycja item)
+    {
+        decimal multiplier = GetVatMultiplier(item.Pozycja_Stawka_VAT);
+        item.Pozycja_Cena_Brutto = Math.Round(item.Pozycja_Cena_Netto * multiplier, 2);
+        RecalculateTotals(item);
+    }
+
+    private void RecalculateFromBrutto(FakturaPozycja item)
+    {
+        decimal multiplier = GetVatMultiplier(item.Pozycja_Stawka_VAT);
+        item.Pozycja_Cena_Netto = Math.Round(item.Pozycja_Cena_Brutto / multiplier, 2);
+        RecalculateTotals(item);
+    }
+
+    private void RecalculateTotals(FakturaPozycja item)
+    {
+        decimal vatRate = GetVatRateDecimal(item.Pozycja_Stawka_VAT);
+        item.Pozycja_Wartosc_N = Math.Round(item.Pozycja_Cena_Netto * item.Pozycja_Ilosc, 2);
+        item.Pozycja_Wartosc_VAT = Math.Round(item.Pozycja_Wartosc_N * vatRate, 2);
+        item.Pozycja_Wartosc_B = item.Pozycja_Wartosc_N + item.Pozycja_Wartosc_VAT;
+    }
+
+    private decimal SumaNetto => pozycjeList.Sum(p => p.Pozycja_Wartosc_N);
+    private decimal SumaVat => pozycjeList.Sum(p => p.Pozycja_Wartosc_VAT);
+    private decimal SumaBrutto => pozycjeList.Sum(p => p.Pozycja_Wartosc_B);
+
+    private void Cancel() => DialogService.Close(null);
+
+    private async Task Save()
+    {
+        if (isSaving) return;
+
+        if (string.IsNullOrWhiteSpace(model.Faktura_Numer))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Brak numeru dokumentu.");
+            return;
+        }
+
+        using (var context = await DbContextFactory.CreateDbContextAsync())
+        {
+            string numberToCheck = model.Faktura_Numer.Trim();
+            bool numberExists = await context.Faktury.AnyAsync(f => 
+                !f.is_Deleted && 
+                f.Faktura_Numer.Trim() == numberToCheck && 
+                f.Guid != model.Guid);
+
+            if (numberExists)
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Error, "Duplikat numeru", $"Dokument o numerze '{numberToCheck}' już istnieje w bazie! Skontaktuj się z administratorem.");
+                return;
+            }
+        }
+
+        if (model.Usluga_Data > model.Data.AddDays(30))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Niepoprawna data", "Data sprzedaży nie może wyprzedzać daty wystawienia faktury o więcej niż 30 dni.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Nabywca_Nazwa))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", isBuyerPerson ? "Wpisz imię i nazwisko nabywcy." : "Wpisz nazwę firmy nabywcy.");
+            return;
+        }
+
+        if (!isBuyerPerson && CorrectedInvoice == null)
+        {
+            if (string.IsNullOrWhiteSpace(model.Nabywca_NIP))
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Wpisz NIP firmy nabywcy.");
+                return;
+            }
+
+            string cleanBuyerNip = model.Nabywca_NIP.Replace("-", "").Replace(" ", "").Trim();
+            if (cleanBuyerNip.Length != 10 || !cleanBuyerNip.All(char.IsDigit))
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędny NIP", "NIP Nabywcy musi składać się z dokładnie 10 cyfr.");
+                return;
+            }
+            model.Nabywca_NIP = cleanBuyerNip;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Nabywca_Ulica) || string.IsNullOrWhiteSpace(model.Nabywca_UlicaNumer) || string.IsNullOrWhiteSpace(model.Nabywca_Miejscowosc) || string.IsNullOrWhiteSpace(model.Nabywca_KodPocztowy))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Uzupełnij pełny adres nabywcy (ulica, nr, miejscowość, kod pocztowy).");
+            return;
+        }
+
+        if (!System.Text.RegularExpressions.Regex.IsMatch(model.Nabywca_KodPocztowy.Trim(), @"^[0-9]{2}-[0-9]{3}$"))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędny kod pocztowy", "Kod pocztowy nabywcy musi mieć format XX-XXX.");
+            return;
+        }
+
+        if (hasDifferentRecipient)
+        {
+            if (string.IsNullOrWhiteSpace(model.Odbiorca_Nazwa))
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", isRecipientPerson ? "Wpisz imię i nazwisko odbiorcy." : "Wpisz nazwę odbiorcy.");
+                return;
+            }
+
+            if (!isRecipientPerson && !string.IsNullOrWhiteSpace(model.Odbiorca_NIP) && CorrectedInvoice == null)
+            {
+                string cleanRecipNip = model.Odbiorca_NIP.Replace("-", "").Replace(" ", "").Trim();
+                if (cleanRecipNip.Length != 10 || !cleanRecipNip.All(char.IsDigit))
+                {
+                    await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędny NIP", "NIP Odbiorcy musi składać się z dokładnie 10 cyfr.");
+                    return;
+                }
+                model.Odbiorca_NIP = cleanRecipNip;
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Odbiorca_Ulica) || string.IsNullOrWhiteSpace(model.Odbiorca_UlicaNumer) || string.IsNullOrWhiteSpace(model.Odbiorca_Miejscowosc) || string.IsNullOrWhiteSpace(model.Odbiorca_KodPocztowy))
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Uzupełnij pełny adres odbiorcy.");
+                return;
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.Odbiorca_KodPocztowy.Trim(), @"^[0-9]{2}-[0-9]{3}$"))
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędny kod pocztowy", "Kod pocztowy odbiorcy musi mieć format XX-XXX.");
+                return;
+            }
+        }
+        else
+        {
+            model.Odbiorca_Nazwa = model.Nabywca_Nazwa;
+            model.Odbiorca_NIP = model.Nabywca_NIP;
+            model.Odbiorca_Ulica = model.Nabywca_Ulica;
+            model.Odbiorca_UlicaNumer = model.Nabywca_UlicaNumer;
+            model.Odbiorca_KodPocztowy = model.Nabywca_KodPocztowy;
+            model.Odbiorca_Miejscowosc = model.Nabywca_Miejscowosc;
+        }
+
+        if (!pozycjeList.Any())
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brak pozycji", "Dokument musi zawierać co najmniej jedną pozycję.");
+            return;
+        }
+
+        foreach (var pos in pozycjeList)
+        {
+            if (string.IsNullOrWhiteSpace(pos.Pozycja_Nazwa))
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędna pozycja", "Każda pozycja musi posiadać nazwę.");
+                return;
+            }
+
+            if (pos.Pozycja_Cena_Netto <= 0)
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędna cena", $"Cena netto dla pozycji '{pos.Pozycja_Nazwa}' musi być większa od 0.");
+                return;
+            }
+        }
+
+        if (CorrectedInvoice != null)
+        {
+            string expectedNip = string.IsNullOrWhiteSpace(CorrectedInvoice.Nabywca_NIP) ? "BRAK" : CorrectedInvoice.Nabywca_NIP.Trim();
+            string inputNip = string.Empty;
+
+            var confirmResult = await DialogService.OpenAsync(
+                "Potwierdzenie zapisu korekty",
+                ds =>
+                @<RadzenStack Gap="1rem" Class="rz-p-2">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <RadzenIcon Icon="edit" IconStyle="IconStyle.Warning" Style="font-size: 1.8rem;" />
+                        <RadzenText TextStyle="TextStyle.H6" Class="rz-m-0">Potwierdzenie korekty</RadzenText>
+                    </RadzenStack>
+
+                    <RadzenText TextStyle="TextStyle.Body2">
+                        Zamierzasz zapisać korektę do faktury <strong>@CorrectedInvoice.Faktura_Numer</strong>.
+                    </RadzenText>
+
+                    <RadzenStack Class="rz-p-3 rz-border-radius-1">
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">
+                            Aby zatwierdzić, wpisz NIP nabywcy (wymagany: <strong>@expectedNip</strong>):
+                        </RadzenText>
+                        <RadzenTextBox Change="@(args => inputNip = args)" Style="width: 100%;" Placeholder="Wpisz NIP..." />
+                    </RadzenStack>
+
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" Class="rz-mt-3">
+                        <RadzenButton Text="Anuluj" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Click="@(() => ds.Close(false))" />
+                        <RadzenButton Text="Potwierdź i Zapisz" Icon="save" ButtonStyle="ButtonStyle.Warning"
+                                      Click="@(() =>
+                                      {
+                                          if (string.Equals(inputNip.Trim(), expectedNip, StringComparison.OrdinalIgnoreCase))
+                                          {
+                                              ds.Close(true);
+                                          }
+                                          else
+                                          {
+                                              PreferencesService.NotifyAsync(NotificationSeverity.Error, "Błąd", "Wprowadzony NIP jest niepoprawny.");
+                                          }
+                                      })" />
+                    </RadzenStack>
+                </RadzenStack>,
+                new DialogOptions { Width = "500px" }
+            );
+
+            if (confirmResult != true)
+            {
+                return;
+            }
+        }
+
+        if (selectedContractor != null)
+        {
+            bool buyerChanged = !string.Equals(selectedContractor.Ulica?.Trim(), model.Nabywca_Ulica?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                                !string.Equals(selectedContractor.NumerDomu?.Trim(), model.Nabywca_UlicaNumer?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                                !string.Equals(selectedContractor.Kod_Pocztowy?.Trim(), model.Nabywca_KodPocztowy?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                                !string.Equals(selectedContractor.Miejscowosc?.Trim(), model.Nabywca_Miejscowosc?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                                !string.Equals(selectedContractor.NIP?.Trim(), model.Nabywca_NIP?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                                !string.Equals(selectedContractor.DisplayName?.Trim(), model.Nabywca_Nazwa?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+            if (buyerChanged)
+            {
+                bool? updateBuyer = await DialogService.Confirm(
+                    $"Zmodyfikowano dane wybranego nabywcy '{selectedContractor.DisplayName}'. Czy chcesz zaktualizować jego dane w stałej bazie kontrahentów?",
+                    "Aktualizacja kontrahenta",
+                    new ConfirmOptions { OkButtonText = "Tak, zaktualizuj w bazie", CancelButtonText = "Nie, zmień tylko na tej fakturze" }
+                );
+
+                if (updateBuyer == true)
+                {
+                    if (isBuyerPerson)
+                    {
+                        var names = model.Nabywca_Nazwa.Split(' ', 2);
+                        selectedContractor.Imie = names[0];
+                        selectedContractor.Nazwisko = names.Length > 1 ? names[1] : string.Empty;
+                    }
+                    else
+                    {
+                        selectedContractor.Nazwa = model.Nabywca_Nazwa;
+                        selectedContractor.NIP = model.Nabywca_NIP;
+                    }
+
+                    selectedContractor.Ulica = model.Nabywca_Ulica;
+                    selectedContractor.NumerDomu = model.Nabywca_UlicaNumer;
+                    selectedContractor.Kod_Pocztowy = model.Nabywca_KodPocztowy;
+                    selectedContractor.Miejscowosc = model.Nabywca_Miejscowosc;
+
+                    await KontrahentService.UpdateContractorAsync(selectedContractor);
+                }
+            }
+        }
+        else
+        {
+            bool buyerExists = contractorsList.Any(c =>
+                (!string.IsNullOrWhiteSpace(model.Nabywca_NIP) && string.Equals(c.NIP?.Trim(), model.Nabywca_NIP?.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+                (string.IsNullOrWhiteSpace(model.Nabywca_NIP) && string.Equals(c.DisplayName?.Trim(), model.Nabywca_Nazwa?.Trim(), StringComparison.OrdinalIgnoreCase))
+            );
+
+            if (!buyerExists && CorrectedInvoice == null)
+            {
+                bool? addContractorConfirm = await DialogService.Confirm(
+                    $"Nabywca '{model.Nabywca_Nazwa}' nie znajduje się w Twojej stałej bazie kontrahentów. Czy chcesz dodać go do bazy?",
+                    "Nowy kontrahent",
+                    new ConfirmOptions { OkButtonText = "Tak, dodaj do bazy", CancelButtonText = "Nie, wystaw bez dodawania" }
+                );
+
+                if (addContractorConfirm == true)
+                {
+                    var newContractor = new Kontrahent
+                    {
+                        Guid = Guid.NewGuid(),
+                        Status = true,
+                        Kod_Kraju = "PL",
+                        Ulica = model.Nabywca_Ulica,
+                        NumerDomu = model.Nabywca_UlicaNumer,
+                        Kod_Pocztowy = model.Nabywca_KodPocztowy,
+                        Miejscowosc = model.Nabywca_Miejscowosc,
+                        Typ = isBuyerPerson ? "Osoba fizyczna" : "Firma",
+                        Kontrahent_Rodzaj = isBuyerPerson ? 2 : 1
+                    };
+
+                    if (isBuyerPerson)
+                    {
+                        var names = model.Nabywca_Nazwa.Split(' ', 2);
+                        newContractor.Imie = names[0];
+                        newContractor.Nazwisko = names.Length > 1 ? names[1] : string.Empty;
+                    }
+                    else
+                    {
+                        newContractor.Nazwa = model.Nabywca_Nazwa;
+                        newContractor.NIP = model.Nabywca_NIP;
+                    }
+
+                    await KontrahentService.AddContractorAsync(newContractor);
+                    contractorsList = await KontrahentService.GetContractorsAsync();
+                }
+            }
+        }
+
+        if (hasDifferentRecipient)
+        {
+            if (selectedRecipient != null)
+            {
+                bool recipientChanged = selectedRecipient.DisplayName != model.Odbiorca_Nazwa ||
+                                        selectedRecipient.Ulica != model.Odbiorca_Ulica ||
+                                        selectedRecipient.NumerDomu != model.Odbiorca_UlicaNumer ||
+                                        selectedRecipient.Kod_Pocztowy != model.Odbiorca_KodPocztowy ||
+                                        selectedRecipient.Miejscowosc != model.Odbiorca_Miejscowosc ||
+                                        selectedRecipient.NIP != model.Odbiorca_NIP;
+
+                if (recipientChanged)
+                {
+                    bool? updateRecipient = await DialogService.Confirm(
+                        $"Zmodyfikowano dane odbiorcy '{selectedRecipient.DisplayName}'. Czy chcesz zaktualizować jego dane w bazie?",
+                        "Aktualizacja odbiorcy",
+                        new ConfirmOptions { OkButtonText = "Tak, zaktualizuj w bazie", CancelButtonText = "Nie, zmień tylko na tej fakturze" }
+                    );
+
+                    if (updateRecipient == true)
+                    {
+                        if (isRecipientPerson)
+                        {
+                            var names = model.Odbiorca_Nazwa.Split(' ', 2);
+                            selectedRecipient.Imie = names[0];
+                            selectedRecipient.Nazwisko = names.Length > 1 ? names[1] : string.Empty;
+                        }
+                        else
+                        {
+                            selectedRecipient.Nazwa = model.Odbiorca_Nazwa;
+                            selectedRecipient.NIP = model.Odbiorca_NIP;
+                        }
+
+                        selectedRecipient.Ulica = model.Odbiorca_Ulica;
+                        selectedRecipient.NumerDomu = model.Odbiorca_UlicaNumer;
+                        selectedRecipient.Kod_Pocztowy = model.Odbiorca_KodPocztowy;
+                        selectedRecipient.Miejscowosc = model.Odbiorca_Miejscowosc;
+
+                        await KontrahentService.UpdateContractorAsync(selectedRecipient);
+                    }
+                }
+            }
+            else if (CorrectedInvoice == null)
+            {
+                bool recipientExists = contractorsList.Any(c =>
+                    (!string.IsNullOrWhiteSpace(model.Odbiorca_NIP) && string.Equals(c.NIP?.Trim(), model.Odbiorca_NIP?.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+                    (string.IsNullOrWhiteSpace(model.Odbiorca_NIP) && string.Equals(c.DisplayName?.Trim(), model.Odbiorca_Nazwa?.Trim(), StringComparison.OrdinalIgnoreCase))
+                );
+
+                if (!recipientExists)
+                {
+                    bool? addRecipientConfirm = await DialogService.Confirm(
+                        $"Odbiorca '{model.Odbiorca_Nazwa}' nie znajduje się w Twojej bazie kontrahentów. Czy chcesz dodać go do bazy?",
+                        "Nowy odbiorca",
+                        new ConfirmOptions { OkButtonText = "Tak, dodaj do bazy", CancelButtonText = "Nie, wystaw bez dodawania" }
+                    );
+
+                    if (addRecipientConfirm == true)
+                    {
+                        var newRecipient = new Kontrahent
+                        {
+                            Guid = Guid.NewGuid(),
+                            Status = true,
+                            Kod_Kraju = "PL",
+                            Ulica = model.Odbiorca_Ulica,
+                            NumerDomu = model.Odbiorca_UlicaNumer,
+                            Kod_Pocztowy = model.Odbiorca_KodPocztowy,
+                            Miejscowosc = model.Odbiorca_Miejscowosc,
+                            Typ = isRecipientPerson ? "Osoba fizyczna" : "Firma",
+                            Kontrahent_Rodzaj = isRecipientPerson ? 2 : 1
+                        };
+
+                        if (isRecipientPerson)
+                        {
+                            var names = model.Odbiorca_Nazwa.Split(' ', 2);
+                            newRecipient.Imie = names[0];
+                            newRecipient.Nazwisko = names.Length > 1 ? names[1] : string.Empty;
+                        }
+                        else
+                        {
+                            newRecipient.Nazwa = model.Odbiorca_Nazwa;
+                            newRecipient.NIP = model.Odbiorca_NIP;
+                        }
+
+                        await KontrahentService.AddContractorAsync(newRecipient);
+                        contractorsList = await KontrahentService.GetContractorsAsync();
+                    }
+                }
+            }
+        }
+
+        foreach (var pos in pozycjeList)
+        {
+            if (pos.Towar_Guid.HasValue)
+            {
+                var originalItem = itemsList.FirstOrDefault(i => i.Guid == pos.Towar_Guid.Value);
+                if (originalItem != null)
+                {
+                    int? posVatVal = int.TryParse(pos.Pozycja_Stawka_VAT?.Replace("%", ""), out int pVat) ? pVat : null;
+                    bool itemChanged = originalItem.Nazwa != pos.Pozycja_Nazwa ||
+                                       originalItem.Cena_Netto != pos.Pozycja_Cena_Netto ||
+                                       originalItem.Cena_Brutto != pos.Pozycja_Cena_Brutto ||
+                                       originalItem.Stawka_VAT != posVatVal;
+
+                    if (itemChanged)
+                    {
+                        bool? updateItemConfirm = await DialogService.Confirm(
+                            $"Zmodyfikowano cenę lub nazwę pozycji cennikowej '{originalItem.Nazwa}'. Czy chcesz zaktualizować jej cenę w bazie cennika?",
+                            "Aktualizacja w cenniku",
+                            new ConfirmOptions { OkButtonText = "Tak, zaktualizuj cennik", CancelButtonText = "Nie, zmień tylko na tej fakturze" }
+                        );
+
+                        if (updateItemConfirm == true)
+                        {
+                            originalItem.Nazwa = pos.Pozycja_Nazwa;
+                            originalItem.Cena_Netto = pos.Pozycja_Cena_Netto;
+                            originalItem.Cena_Brutto = pos.Pozycja_Cena_Brutto;
+                            originalItem.Stawka_VAT = posVatVal;
+
+                            await TowaryService.UpdateDictionaryItemAsync(originalItem);
+                        }
+                    }
+                }
+            }
+        }
+
+        var newItemsToSuggest = pozycjeList
+            .Where(p => !p.Towar_Guid.HasValue && !itemsList.Any(i => string.Equals(i.Nazwa?.Trim(), p.Pozycja_Nazwa?.Trim(), StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        if (newItemsToSuggest.Any())
+        {
+            string itemNames = string.Join(", ", newItemsToSuggest.Select(i => $"'{i.Pozycja_Nazwa}'"));
+            bool? addItemsConfirm = await DialogService.Confirm(
+                $"Następujące pozycje nie znajdują się w Twoim cenniku / słowniku: {itemNames}. Czy chcesz dodać je automatycznie do bazy towarów i usług?",
+                "Nowe pozycje w cenniku",
+                new ConfirmOptions { OkButtonText = "Tak, dodaj do bazy", CancelButtonText = "Nie, zapisz tylko fakturę" }
+            );
+
+            if (addItemsConfirm == true)
+            {
+                foreach (var pos in newItemsToSuggest)
+                {
+                    int? vatVal = int.TryParse(pos.Pozycja_Stawka_VAT?.Replace("%", ""), out int parsedVat) ? parsedVat : null;
+
+                    var newDictionaryItem = new Towary
+                    {
+                        Guid = Guid.NewGuid(),
+                        Nazwa = pos.Pozycja_Nazwa,
+                        Cena_Netto = pos.Pozycja_Cena_Netto,
+                        Cena_Brutto = pos.Pozycja_Cena_Brutto,
+                        Stawka_VAT = vatVal,
+                        Jednostka_Miary = "szt.",
+                        Status = true,
+                        Rodzaj = 1
+                    };
+
+                    await TowaryService.AddDictionaryItemAsync(newDictionaryItem);
+                    pos.Towar_Guid = newDictionaryItem.Guid;
+                }
+
+                itemsList = await TowaryService.GetDictionaryItemsAsync();
+            }
+        }
+
+        isSaving = true;
+
+        try
+        {
+            model.FakturaPozycje = pozycjeList;
+            model.Kwota = SumaBrutto;
+
+            InvoiceXmlConverter xmlConverter = new InvoiceXmlConverter();
+            string? xml = null;
+            var nabywca = new FakturaPodmiot
+            {
+                Guid = Guid.NewGuid(),
+                Faktura_Guid = model.Guid,
+                Faktura_Numer = model.Faktura_Numer,
+                Nazwa = model.Nabywca_Nazwa,
+                NIP = model.Nabywca_NIP,
+                Ulica = model.Nabywca_Ulica,
+                Numer_Domu = model.Nabywca_UlicaNumer,
+                Kod_Pocztowy = model.Nabywca_KodPocztowy,
+                Miejscowosc = model.Nabywca_Miejscowosc,
+                Kod_Kraju = "PL",
+                Typ_Na_Fa = 2,
+                is_Deleted = false,
+                Timestamp = DateTime.Now
+            };
+
+            FakturaPodmiot? odbiorca = null;
+            if (model.Nabywca_NIP != model.Odbiorca_NIP)
+            {
+                odbiorca = new FakturaPodmiot
+                {
+                    Guid = Guid.NewGuid(),
+                    Faktura_Guid = model.Guid,
+                    Faktura_Numer = model.Faktura_Numer,
+                    Nazwa = model.Odbiorca_Nazwa,
+                    NIP = model.Odbiorca_NIP,
+                    Ulica = model.Odbiorca_Ulica,
+                    Numer_Domu = model.Odbiorca_UlicaNumer,
+                    Kod_Pocztowy = model.Odbiorca_KodPocztowy,
+                    Miejscowosc = model.Odbiorca_Miejscowosc,
+                    Kod_Kraju = "PL",
+                    Typ_Na_Fa = 3,
+                    is_Deleted = false,
+                    Timestamp = DateTime.Now
+                };
+            }
+
+            if (CorrectedInvoice != null)
+            {
+                var CorrectedNabywca = new FakturaPodmiot
+                {
+                    Guid = Guid.NewGuid(),
+                    Faktura_Guid = CorrectedInvoice.Guid,
+                    Faktura_Numer = CorrectedInvoice.Faktura_Numer,
+                    Nazwa = CorrectedInvoice.Nabywca_Nazwa,
+                    NIP = CorrectedInvoice.Nabywca_NIP,
+                    Ulica = CorrectedInvoice.Nabywca_Ulica,
+                    Numer_Domu = CorrectedInvoice.Nabywca_UlicaNumer,
+                    Kod_Pocztowy = CorrectedInvoice.Nabywca_KodPocztowy,
+                    Miejscowosc = CorrectedInvoice.Nabywca_Miejscowosc,
+                    Kod_Kraju = "PL",
+                    Typ_Na_Fa = 2,
+                    is_Deleted = false,
+                    Timestamp = DateTime.Now
+                };
+
+                FakturaPodmiot? CorrectedOdbiorca = null;
+                if (CorrectedInvoice.Nabywca_NIP != CorrectedInvoice.Odbiorca_NIP)
+                {
+                    CorrectedOdbiorca = new FakturaPodmiot
+                    {
+                        Guid = Guid.NewGuid(),
+                        Faktura_Guid = CorrectedInvoice.Guid,
+                        Faktura_Numer = CorrectedInvoice.Faktura_Numer,
+                        Nazwa = CorrectedInvoice.Odbiorca_Nazwa,
+                        NIP = CorrectedInvoice.Odbiorca_NIP,
+                        Ulica = CorrectedInvoice.Odbiorca_Ulica,
+                        Numer_Domu = CorrectedInvoice.Odbiorca_UlicaNumer,
+                        Kod_Pocztowy = CorrectedInvoice.Odbiorca_KodPocztowy,
+                        Miejscowosc = CorrectedInvoice.Odbiorca_Miejscowosc,
+                        Kod_Kraju = "PL",
+                        Typ_Na_Fa = 3,
+                        is_Deleted = false,
+                        Timestamp = DateTime.Now
+                    };
+                }
+
+                using var context = await DbContextFactory.CreateDbContextAsync();
+                var numerKsef = context.KsefFaktury.FirstOrDefault(e => e.Faktura_Guid == CorrectedInvoice.Guid)?.Resp_ksefNumber;
+                xml = xmlConverter.getCorrectionXml(
+                    numerKsef,
+                    CorrectedInvoice, model,
+                    ConfigurationService.ConfigurationData,
+                    CorrectedNabywca, nabywca,
+                    CorrectedOdbiorca, odbiorca);
+            }
+            else
+            {
+                xml = xmlConverter.getInvoiceXml(model, ConfigurationService.ConfigurationData, nabywca, odbiorca);
+            }
+
+            ApiResponseDetails? apiResult = null;
+            bool useMock = Configuration.GetValue<bool>("KsefSettings:UseMockApi");
+
+            if (useMock)
+            {
+                apiResult = new ApiResponseDetails
+                {
+                    IntegrationCode = IntegrationMessageEnum.Operacja_powiodla_sie,
+                    SessionReferenceNumber = "SESSION-TEST-2026-MOCK",
+                    KsefCode = (System.Net.HttpStatusCode)200,
+                    SingleInvoice = new()
+                    {
+                        AcquisitionDate = DateTime.Now,
+                        InvoicingDate = DateTime.Now,
+                        PermanentStorageDate = DateTime.Now,
+                        InvoiceFileName = $"{model.Faktura_Numer.Replace("/", "_")}.xml",
+                        InvoiceHash = "MOCK_HASH_1234567890ABCDEF",
+                        InvoiceNumber = model.Faktura_Numer,
+                        KsefNumber = $"1234567890-20260813-MOCK-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}",
+                        ReferenceNumber = $"REF-{Guid.NewGuid().ToString().Substring(0, 10).ToUpper()}",
+                        qrInvoiceUrl = "https://ksef-test.mf.gov.pl/web/verify/mock-qr-code",
+                        UpoDownloadUrl = new Uri("https://ksef-test.mf.gov.pl/web/upo/mock"),
+                        UpoDownloadUrlExpirationDate = DateTime.Now.AddDays(7),
+                        Status = new() { Code = 200, Description = "Przyjęto w trybie offline/mock" }
+                    }
+                };
+
+                await LoadingService.WrapWithDelayAsync(async () =>
+                {
+                    await Task.Delay(1000);
+                }, 1000, "Symulacja rejestracji i generowania KSeF (Tryb Offline)...");
+            }
+            else
+            {
+                await LoadingService.WrapWithDelayAsync(async () =>
+                {
+                    apiResult = await KsefApiIntegrationHelper.PostXmlAsync(ConfigurationService.ConfigurationData.Sprzedawca_NIP, xml);
+                }, 2000, "Trwa przetwarzanie i wysyłka dokumentu do systemu KSeF...");
+            }
+
+            if (!string.IsNullOrEmpty(xml) && xml.StartsWith("<?xml"))
+            {
+                int endOfDeclaration = xml.IndexOf("?>");
+                if (endOfDeclaration != -1)
+                {
+                    xml = xml.Substring(endOfDeclaration + 2).Trim();
+                }
+            }
+
+            bool success = await FakturaService.AddInvoiceAsync(model, apiResult, xml);
+
+            if (success)
+            {
+                await ConfigurationService.IncrementInvoiceNumberAsync(CorrectedInvoice != null);
+
+                string msg = CorrectedInvoice != null ? $"Wystawiono i wysłano korektę {model.Faktura_Numer}." : $"Wystawiono i wysłano fakturę {model.Faktura_Numer}.";
+                await PreferencesService.NotifyAsync(NotificationSeverity.Success, "KSeF", msg);
+                DialogService.Close(true);
+            }
+            else
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Error, "Błąd", "Nie udało się zapisać dokumentu w bazie.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Error, "Błąd", ex.Message);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

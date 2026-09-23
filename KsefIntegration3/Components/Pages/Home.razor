@@ -1,0 +1,63 @@
+﻿@page "/pulpit"
+
+<PageTitle>Pulpit - Ski Control</PageTitle>
+
+<RadzenStack Gap="1.5rem">
+    <PageHeader Title="Pulpit"
+                Subtitle="Podsumowanie Twojej działalności"
+                ShowButton="false" />
+    <QuickActions />
+    <DashboardSummary @ref="summaryRef" />
+    <FinancialChart @ref="chartRef" />
+    <InvoiceList />
+</RadzenStack>
+
+@code {
+    private DashboardSummary? summaryRef;
+    private FinancialChart? chartRef;
+    private static bool isAppInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (!isAppInitialized)
+            {
+                LoadingService.Show("Ładowanie pulpitu i podsumowań...");
+            }
+
+            try
+            {
+                var tasks = new List<Task>();
+
+                if (summaryRef != null)
+                {
+                    tasks.Add(summaryRef.RefreshDataAsync());
+                }
+
+                if (chartRef != null)
+                {
+                    tasks.Add(chartRef.RefreshChartAsync());
+                }
+
+                if (!isAppInitialized)
+                {
+                    tasks.Add(Task.Delay(500));
+                }
+
+                if (tasks.Any())
+                {
+                    await Task.WhenAll(tasks);
+                }
+            }
+            finally
+            {
+                if (!isAppInitialized)
+                {
+                    LoadingService.Hide();
+                    isAppInitialized = true;
+                }
+            }
+        }
+    }
+}

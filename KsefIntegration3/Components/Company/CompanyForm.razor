@@ -1,0 +1,365 @@
+﻿@if (!hasData)
+{
+    <!-- TRYB 1: PUSTY FORMULARZ -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+        <RadzenText TextStyle="TextStyle.H6" Class="rz-color-primary rz-font-weight-bold rz-mb-3">Uzupełnij dane sprzedawcy</RadzenText>
+        <RadzenDivider Class="rz-mb-4" />
+
+        <RadzenStack Gap="1.25rem">
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="8">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Pełna nazwa firmy</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_Nazwa" Style="width: 100%;" Placeholder="np. Podhale Tech Sp. z o.o." />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">NIP</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_NIP" Style="width: 100%;" Placeholder="10 cyfr NIP" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Ulica</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_Ulica" Style="width: 100%;" Placeholder="np. ul. Środkowa" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Nr budynku / lokalu</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_UlicaNr" Style="width: 100%;" Placeholder="12A/4" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Numer BDO</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_Numer_BDO" Style="width: 100%;" Placeholder="Opcjonalnie" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Kod pocztowy</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_KodPocztowy" Style="width: 100%;" Placeholder="np. 34-405" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="8">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Miejscowość</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_Miejscowosc" Style="width: 100%;" Placeholder="np. Białka Tatrzańska" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-color-primary rz-font-weight-bold rz-mt-3 rz-mb-1">Bank i domyślne parametry dokumentów</RadzenText>
+            <RadzenDivider Class="rz-mb-2" />
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Nazwa banku</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_BankNazwa" Style="width: 100%;" Placeholder="np. PKO Bank Polski" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="8">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Numer konta IBAN</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_BankKonto" Style="width: 100%;" Placeholder="26 cyfr rachunku" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Domyślne miejsce wystawienia</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Faktura_MiejsceWystawienia" Style="width: 100%;" Placeholder="np. Białka Tatrzańska" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-mt-3">
+                <RadzenButton Text="Zapisz dane firmy" Icon="save" ButtonStyle="ButtonStyle.Primary" Click="@SaveData" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+}
+else if (isEditing)
+{
+    <!-- TRYB 2: EDYCJA -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Class="rz-mb-3">
+            <RadzenText TextStyle="TextStyle.H6" Class="rz-color-primary rz-font-weight-bold rz-m-0">Edycja danych firmy</RadzenText>
+        </RadzenStack>
+        <RadzenDivider Class="rz-mb-4" />
+
+        <RadzenStack Gap="1.25rem">
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="8">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Pełna nazwa firmy</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_Nazwa" Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">NIP</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_NIP" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Ulica</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_Ulica" Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Nr budynku / lokalu</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_UlicaNr" Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Numer BDO</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_Numer_BDO" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Kod pocztowy</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_KodPocztowy" Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="8">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Miejscowość</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_Miejscowosc" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-color-primary rz-font-weight-bold rz-mt-3 rz-mb-1">Bank i domyślne parametry dokumentów</RadzenText>
+            <RadzenDivider Class="rz-mb-2" />
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Nazwa banku</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_BankNazwa" Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="8">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Numer konta IBAN</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Sprzedawca_BankKonto" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Domyślne miejsce wystawienia</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Faktura_MiejsceWystawienia" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-mt-3" Gap="0.75rem">
+                <RadzenButton Text="Anuluj" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Click="@CancelEdit" />
+                <RadzenButton Text="Zapisz zmiany" Icon="save" ButtonStyle="ButtonStyle.Primary" Click="@SaveData" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+}
+else
+{
+    <!-- TRYB 3: POUKŁADANY WIDOK KARTY -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Class="rz-mb-3">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                <RadzenIcon Icon="business" Style="font-size: 2rem;" Class="rz-color-primary" />
+                <div>
+                    <RadzenText TextStyle="TextStyle.H6" Class="rz-m-0 rz-font-weight-bold">@model.Sprzedawca_Nazwa</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Dane rejestrowe i domyślne parametry sprzedaży</RadzenText>
+                </div>
+            </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                <RadzenButton Text="Podgląd" Icon="visibility" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Click="@OpenPreviewModal" />
+                <RadzenButton Text="Edytuj" Icon="edit" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="@StartEditing" />
+                <RadzenButton Text="Wyczyść" Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Click="@ClearData" />
+            </RadzenStack>
+        </RadzenStack>
+        <RadzenDivider Class="rz-mb-4" />
+
+        <RadzenRow Gap="1.25rem">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenCard Variant="Variant.Outlined" Class="rz-p-3" Style="height: 100%;">
+                    <RadzenStack Gap="1rem">
+                        <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-primary rz-font-weight-bold rz-m-0">Identyfikacja i Adres</RadzenText>
+
+                        <RadzenRow Gap="0.5rem">
+                            <RadzenColumn Size="6">
+                                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">NIP</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0 rz-font-weight-bold">@(string.IsNullOrEmpty(model.Sprzedawca_NIP) ? "-" : model.Sprzedawca_NIP)</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Numer BDO</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0 rz-font-weight-bold">@(string.IsNullOrEmpty(model.Sprzedawca_Numer_BDO) ? "-" : model.Sprzedawca_Numer_BDO)</RadzenText>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <div>
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Adres siedziby</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0 rz-font-weight-bold">
+                                @model.Sprzedawca_Ulica @model.Sprzedawca_UlicaNr
+                            </RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-text-secondary rz-m-0">
+                                @model.Sprzedawca_KodPocztowy @model.Sprzedawca_Miejscowosc
+                            </RadzenText>
+                        </div>
+                    </RadzenStack>
+                </RadzenCard>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenCard Variant="Variant.Outlined" Class="rz-p-3" Style="height: 100%;">
+                    <RadzenStack Gap="1rem">
+                        <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-primary rz-font-weight-bold rz-m-0">Bank i Ustawienia Faktur</RadzenText>
+
+                        <div>
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Konto Bankowe</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0 rz-font-weight-bold">@(string.IsNullOrEmpty(model.Sprzedawca_BankNazwa) ? "Brak banku" : model.Sprzedawca_BankNazwa)</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0">@(string.IsNullOrEmpty(model.Sprzedawca_BankKonto) ? "-" : model.Sprzedawca_BankKonto)</RadzenText>
+                        </div>
+
+                        <div>
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Domyślne miejsce wystawienia</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0 rz-font-weight-bold">@(string.IsNullOrEmpty(model.Faktura_MiejsceWystawienia) ? "-" : model.Faktura_MiejsceWystawienia)</RadzenText>
+                        </div>
+                    </RadzenStack>
+                </RadzenCard>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+}
+
+@code {
+    private KsefIntegration3.Services.ConfigurationData model = new();
+    private bool hasData = false;
+    private bool isEditing = false;
+    private static bool isCompanyLoaded = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCompanyDataAsync();
+    }
+
+    private async Task LoadCompanyDataAsync()
+    {
+        if (!isCompanyLoaded)
+        {
+            LoadingService.Show("Ładowanie danych firmy...");
+        }
+
+        try
+        {
+            model = await ConfigurationService.GetConfigurationDataAsync();
+            hasData = !string.IsNullOrWhiteSpace(model.Sprzedawca_Nazwa) || !string.IsNullOrWhiteSpace(model.Sprzedawca_NIP);
+
+            if (!isCompanyLoaded)
+            {
+                await Task.Delay(500);
+            }
+        }
+        catch
+        {
+        }
+        finally
+        {
+            if (!isCompanyLoaded)
+            {
+                LoadingService.Hide();
+                isCompanyLoaded = true;
+            }
+        }
+    }
+
+    private void StartEditing() => isEditing = true;
+
+    private async Task CancelEdit()
+    {
+        await LoadCompanyDataAsync();
+        isEditing = false;
+    }
+
+    private async Task SaveData()
+    {
+        if (string.IsNullOrWhiteSpace(model.Sprzedawca_Nazwa))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Brakujące dane", "Wpisz pełną nazwę swojej firmy.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Sprzedawca_NIP))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Brakujące dane", "Wpisz NIP firmy.");
+            return;
+        }
+
+        string cleanNip = model.Sprzedawca_NIP.Replace("-", "").Replace(" ", "").Trim();
+        if (cleanNip.Length != 10 || !cleanNip.All(char.IsDigit))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Błędny NIP", "NIP firmy musi składać się z dokładnie 10 cyfr.");
+            return;
+        }
+        model.Sprzedawca_NIP = cleanNip;
+
+        if (!string.IsNullOrWhiteSpace(model.Sprzedawca_Numer_BDO))
+        {
+            string cleanBdo = model.Sprzedawca_Numer_BDO.Trim();
+            if (!cleanBdo.All(char.IsDigit))
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Błędny BDO", "Numer BDO może zawierać tylko cyfry.");
+                return;
+            }
+            model.Sprzedawca_Numer_BDO = cleanBdo;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Sprzedawca_Ulica) || string.IsNullOrWhiteSpace(model.Sprzedawca_UlicaNr) ||
+            string.IsNullOrWhiteSpace(model.Sprzedawca_Miejscowosc) || string.IsNullOrWhiteSpace(model.Sprzedawca_KodPocztowy))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Brakujące dane", "Uzupełnij pełny adres siedziby firmy.");
+            return;
+        }
+
+        bool isZipValid = System.Text.RegularExpressions.Regex.IsMatch(model.Sprzedawca_KodPocztowy.Trim(), @"^[0-9]{2}-[0-9]{3}$");
+        if (!isZipValid)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Błędny kod pocztowy", "Kod pocztowy musi mieć format XX-XXX (np. 34-405).");
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Sprzedawca_BankKonto))
+        {
+            string cleanIban = model.Sprzedawca_BankKonto.Replace(" ", "").Trim();
+            if (cleanIban.Length < 16)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Błędne konto bankowe", "Numer konta bankowego jest za krótki.");
+                return;
+            }
+            model.Sprzedawca_BankKonto = cleanIban;
+        }
+
+        await LoadingService.WrapWithDelayAsync(async () =>
+        {
+            await ConfigurationService.SaveConfigurationDataAsync(model);
+        }, 800, "Zapisywanie danych firmy...");
+
+        NotificationService.Notify(NotificationSeverity.Success, "Zapisano", "Dane firmy zostały zaktualizowane.");
+        isEditing = false;
+        await LoadCompanyDataAsync();
+    }
+
+    private async Task ClearData()
+    {
+        bool? confirm = await DialogService.Confirm(
+            "Czy na pewno chcesz usunąć/wyczyścić dane swojej firmy?",
+            "Potwierdzenie czyszczenia",
+            new ConfirmOptions { OkButtonText = "Tak, wyczyść", CancelButtonText = "Anuluj" }
+        );
+
+        if (confirm == true)
+        {
+            await LoadingService.WrapWithDelayAsync(async () =>
+            {
+                model = new KsefIntegration3.Services.ConfigurationData();
+                await ConfigurationService.SaveConfigurationDataAsync(model);
+            }, 600, "Czyszczenie danych firmy...");
+
+            NotificationService.Notify(NotificationSeverity.Info, "Wyczyszczono", "Dane firmy zostały usunięte.");
+            await LoadCompanyDataAsync();
+        }
+    }
+
+    private async Task OpenPreviewModal()
+    {
+        await DialogService.OpenAsync<CompanyDetailsDialog>(
+            "Szczegóły Mojej Firmy",
+            new Dictionary<string, object> { { "ConfigData", model } },
+            new DialogOptions { Width = "550px" }
+        );
+    }
+}

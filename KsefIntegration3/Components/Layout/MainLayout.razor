@@ -1,0 +1,219 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+
+<RadzenComponents />
+<RadzenNotification />
+
+@if (LoadingService.IsLoading)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.55); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+        <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large" ShowValue="false" />
+        @if (!string.IsNullOrEmpty(LoadingService.LoadingMessage))
+        {
+            <span style="color: #ffffff; font-weight: 600; font-size: 1.05rem; margin-top: 1.25rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
+                @LoadingService.LoadingMessage
+            </span>
+        }
+    </div>
+}
+
+<RadzenLayout Style="min-height: 100vh;">
+    <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Class="rz-px-3 rz-py-2">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                <RadzenSidebarToggle Click="@(() => sidebar1Expanded = !sidebar1Expanded)" />
+                <RadzenLabel Text="Ski Control Portal Faktur" Class="rz-ms-2" Style="font-weight: bold; font-size: 1.1rem;" />
+            </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1.5rem" Class="rz-me-3">
+
+                <!-- 1. STATUS KSEF -->
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" Title="Status połączenia ze środowiskiem KSeF">
+                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: @(ksefStatus == KsefStatusType.Online ? "var(--rz-success)" : "var(--rz-danger)"); box-shadow: 0 0 6px @(ksefStatus == KsefStatusType.Online ? "rgba(46, 125, 50, 0.6)" : "rgba(211, 47, 47, 0.6)");"></span>
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-m-0" Style="font-weight: 600;">
+                        KSeF: @(ksefStatus == KsefStatusType.Online ? "Aktywny" : (ksefStatus == KsefStatusType.Checking ? "Sprawdzanie..." : "Błąd połączenia"))
+                    </RadzenText>
+                </RadzenStack>
+
+                <!-- 2. STATUS API SKI DATA -->
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" Title="Status połączenia z API SkiData">
+                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: @(isSkiDataOnline ? "var(--rz-success)" : "var(--rz-danger)"); box-shadow: 0 0 6px @(isSkiDataOnline ? "rgba(46, 125, 50, 0.6)" : "rgba(211, 47, 47, 0.6)");"></span>
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-m-0" Style="font-weight: 600;">
+                        SkiData API: @(isSkiDataOnline ? "Aktywny" : "Brak połączenia")
+                    </RadzenText>
+                </RadzenStack>
+
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenHeader>
+
+    <RadzenSidebar @bind-Expanded="@sidebar1Expanded">
+        <RadzenPanelMenu Style="width: 100%;">
+            <RadzenPanelMenuItem Text="Pulpit" Icon="home" Path="/pulpit" />
+            <RadzenPanelMenuItem Text="Faktury sprzedażowe" Icon="description" Path="/faktury" />
+            <RadzenPanelMenuItem Text="Towary" Icon="format_list_bulleted" Path="/pozycje" />
+            <RadzenPanelMenuItem Text="Kontrahenci" Icon="people" Path="/kontrahenci" />
+            <RadzenPanelMenuItem Text="Moja firma" Path="/moja-firma" Icon="business" />
+            <RadzenPanelMenuItem Text="Ustawienia" Path="/ustawienia" Icon="settings" />
+        </RadzenPanelMenu>
+
+        <RadzenCard Class="rz-p-3 rz-m-2"
+                    Style="background-color: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; user-select: none;"
+                    @onclick="@(() => showEasterEgg = true)">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenIcon Icon="downhill_skiing" IconStyle="IconStyle.Primary" Style="font-size: 1.8rem;" />
+                <RadzenStack Gap="0">
+                    <RadzenText TextStyle="TextStyle.Caption" Style="color: #94a3b8; margin: 0; font-size: 0.75rem;">Oprogramowanie</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Subtitle2" Style="color: #ffffff; margin: 0; font-weight: bold;">Ski Control</RadzenText>
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenCard>
+    </RadzenSidebar>
+
+    <RadzenBody>
+        <div class="rz-p-4">
+            @Body
+        </div>
+    </RadzenBody>
+
+    <RadzenFooter Class="rz-px-4 rz-py-3">
+        <RadzenRow AlignItems="AlignItems.Center" RowGap="2">
+            <!-- SEKCJA 1: DANE FIRMY -->
+            <RadzenColumn Size="12" SizeMD="5">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                    <RadzenIcon Icon="location_on" IconStyle="IconStyle.Primary" />
+                    <RadzenStack Gap="0">
+                        <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-m-0 rz-font-weight-bold">
+                            Skicontrol X XXXXXXXXX
+                        </RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0 rz-color-text-secondary">
+                            XXXXXXXXXXXXXX, XX-XXX XXXXXXXXXXXXXXX | NIP: XXXXXXXXXX
+                        </RadzenText>
+                    </RadzenStack>
+                </RadzenStack>
+            </RadzenColumn>
+
+            <!-- SEKCJA 2: STATUS INTEGRACJI -->
+            <RadzenColumn Size="12" SizeMD="3" Class="rz-text-align-center">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.5rem">
+                    <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" />
+                    <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0 rz-font-weight-bold">
+                        Strona zintegrowana z środowiskiem KSeF
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenColumn>
+
+            <!-- SEKCJA 3: PRAWA I WERSJA -->
+            <RadzenColumn Size="12" SizeMD="4" Class="rz-text-align-right">
+                <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0 rz-color-text-secondary">
+                    &copy; @DateTime.Now.Year Ski Control v1.0.0 | <RadzenLink Path="mailto:support@skicontrol.pl" Text="Wsparcie" Class="rz-font-weight-bold" />
+                </RadzenText>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenFooter>
+</RadzenLayout>
+
+@code {
+    bool sidebar1Expanded = true;
+    private bool showEasterEgg = false;
+    private enum KsefStatusType { Checking, Online, Offline }
+    private KsefStatusType ksefStatus = KsefStatusType.Checking;
+    private bool isSkiDataOnline = true;
+    private DateTime lastCheckedTime = DateTime.Now;
+    private CancellationTokenSource? _cts;
+
+    protected override void OnInitialized()
+    {
+        LoadingService.OnChange += HandleLoadingChanged;
+        _cts = new CancellationTokenSource();
+        _ = StartKsefHealthCheckTimerAsync(_cts.Token);
+    }
+
+    private void HandleLoadingChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task StartKsefHealthCheckTimerAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(15));
+        await CheckKsefStatusAsync();
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await CheckKsefStatusAsync();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task CheckKsefStatusAsync()
+    {
+        try
+        {
+            using var client = HttpClientFactory.CreateClient("KsefApiIntegration");
+            client.Timeout = TimeSpan.FromSeconds(5);
+
+            var response = await client.GetAsync("");
+            if (response.IsSuccessStatusCode || (int)response.StatusCode < 500)
+            {
+                ksefStatus = KsefStatusType.Online;
+            }
+            else
+            {
+                ksefStatus = KsefStatusType.Offline;
+            }
+        }
+        catch
+        {
+            ksefStatus = KsefStatusType.Offline;
+        }
+        finally
+        {
+            lastCheckedTime = DateTime.Now;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            PreferencesService.OnChange += UpdateLayout;
+            await ApplySettingsAsync();
+        }
+    }
+
+    private async void UpdateLayout()
+    {
+        await ApplySettingsAsync();
+    }
+
+    private async Task ApplySettingsAsync()
+    {
+        try
+        {
+            var settings = await PreferencesService.GetSettingsAsync();
+            if (settings != null)
+            {
+                await JSRuntime.InvokeVoidAsync("changeTheme", settings.IsDarkMode);
+            }
+        }
+        catch
+        {
+            // fallback
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        LoadingService.OnChange -= HandleLoadingChanged;
+        PreferencesService.OnChange -= UpdateLayout;
+    }
+}

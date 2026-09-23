@@ -1,0 +1,277 @@
+﻿<RadzenStack Gap="1.25rem" Class="rz-p-2" Style="max-height: 80vh; overflow-y: auto;">
+
+    <!-- SEKCJA METADANYCH KSEF -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-3" Style="border-left: 4px solid var(--rz-primary);">
+        <RadzenRow Gap="1rem" AlignItems="AlignItems.Center">
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Status KSeF</RadzenText>
+                <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-m-0" Style="@(ksefInfo != null && !string.IsNullOrEmpty(ksefInfo.Resp_ksefNumber) ? "color: #2e7d32; font-weight: bold;" : "color: var(--rz-text-color-secondary); font-weight: bold;")">
+                    @(ksefInfo != null && !string.IsNullOrEmpty(ksefInfo.Resp_ksefNumber) ? "Przyjęto w bramce KSeF" : "Oczekuje na wysyłkę")
+                </RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Data rejestracji</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0 rz-color-text">
+                    <strong>
+                        @(ksefInfo != null && DateTime.TryParse(ksefInfo.Resp_acquisitionDate, out var dateVal) 
+                            ? dateVal.ToString("dd.MM.yyyy HH:mm:ss") 
+                            : ksefInfo?.CreateTimeStamp.ToString("dd.MM.yyyy HH:mm:ss") ?? "-")
+                    </strong>
+                </RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Numer KSeF</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0 rz-color-text" Style="word-break: break-all;">
+                    <strong>@(ksefInfo?.Resp_ksefNumber ?? "-")</strong>
+                </RadzenText>
+            </RadzenColumn>
+        </RadzenRow>
+
+        @if (ksefInfo != null && !string.IsNullOrEmpty(ksefInfo.Resp_upoDownloadUrl))
+        {
+            <RadzenDivider Class="rz-my-2" />
+            <RadzenRow AlignItems="AlignItems.Center">
+                <RadzenColumn Size="12">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-me-2">Urzędowe Poświadczenie Odbioru:</RadzenText>
+                    <a href="@ksefInfo.Resp_upoDownloadUrl" target="_blank" style="font-size: 0.85rem; color: var(--rz-primary); font-weight: 600; text-decoration: underline;">
+                        Pobierz plik UPO
+                    </a>
+                </RadzenColumn>
+            </RadzenRow>
+        }
+    </RadzenCard>
+
+    <!-- SEKCJA PODSTAWOWYCH KWOT I DAT -->
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeMD="4">
+            <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Suma brutto</RadzenText>
+                <RadzenText TextStyle="TextStyle.H5" Class="rz-m-0" Style="@GetHighlightStyle(baseInvoice != null && Faktura.Kwota != baseInvoice.Kwota, "color: var(--rz-primary);")">
+                    <strong>@FormatPLN(Faktura.Kwota)</strong>
+                </RadzenText>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="4">
+            <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Data sprzedaży</RadzenText>
+                <RadzenText TextStyle="TextStyle.H6" Class="rz-m-0" Style="@GetHighlightStyle(baseInvoice != null && Faktura.Usluga_Data != baseInvoice.Usluga_Data)">
+                    <strong>@Faktura.Usluga_Data.ToString("dd.MM.yyyy")</strong>
+                </RadzenText>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="4">
+            <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Forma płatności</RadzenText>
+                <RadzenText TextStyle="TextStyle.H6" Class="rz-m-0" Style="@GetHighlightStyle(baseInvoice != null && (Faktura.Platnosc_Nazwa != baseInvoice.Platnosc_Nazwa || Faktura.Platnosc_Termin != baseInvoice.Platnosc_Termin))">
+                    <strong>@(string.IsNullOrEmpty(Faktura.Platnosc_Nazwa) ? "Przelew" : Faktura.Platnosc_Nazwa), termin @(Faktura.Platnosc_Termin ?? 14) dni</strong>
+                </RadzenText>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- SEKCJA STRON TRANSAKCJI -->
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard Variant="Variant.Filled" Class="rz-p-3" Style="height: 100%;">
+                <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-primary rz-mb-1">Sprzedawca</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0"><strong>@Faktura.Sprzedawca_Nazwa</strong></RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">
+                    NIP: @(string.IsNullOrEmpty(Faktura.Sprzedawca_NIP) ? "-" : Faktura.Sprzedawca_NIP)
+                </RadzenText>
+                <RadzenText TextStyle="TextStyle.Body2" Class="rz-mt-2 rz-m-0">
+                    @Faktura.Sprzedawca_Ulica @Faktura.Sprzedawca_Numer<br />
+                    @Faktura.Sprzedawca_KodPocztowy @Faktura.Sprzedawca_Miejscowosc
+                </RadzenText>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard Variant="Variant.Filled" Class="rz-p-3" Style="height: 100%;">
+                <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-primary rz-mb-1">Nabywca</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0" Style="@GetHighlightStyle(baseInvoice != null && Faktura.NabywcaDisplayName != baseInvoice.NabywcaDisplayName)">
+                    <strong>@Faktura.NabywcaDisplayName</strong>
+                </RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">
+                    NIP: @(string.IsNullOrEmpty(Faktura.Nabywca_NIP) ? "-" : Faktura.Nabywca_NIP)
+                </RadzenText>
+                <RadzenText TextStyle="TextStyle.Body2" Class="rz-mt-2 rz-m-0" Style="@GetHighlightStyle(baseInvoice != null && (Faktura.Nabywca_Ulica != baseInvoice.Nabywca_Ulica || Faktura.Nabywca_Miejscowosc != baseInvoice.Nabywca_Miejscowosc))">
+                    @Faktura.Nabywca_Ulica @Faktura.Nabywca_UlicaNumer<br />
+                    @Faktura.Nabywca_KodPocztowy @Faktura.Nabywca_Miejscowosc
+                </RadzenText>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    @if (hasDifferentRecipient)
+    {
+        <RadzenCard Variant="Variant.Filled" Class="rz-p-3" Style="border-left: 4px solid var(--rz-secondary);">
+            <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-secondary rz-mb-1">Odbiorca towaru</RadzenText>
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0"><strong>@Faktura.Odbiorca_Nazwa</strong></RadzenText>
+                    @if (!string.IsNullOrWhiteSpace(Faktura.Odbiorca_NIP))
+                    {
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">
+                            NIP: @Faktura.Odbiorca_NIP
+                        </RadzenText>
+                    }
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0">
+                        @Faktura.Odbiorca_Ulica @Faktura.Odbiorca_UlicaNumer<br />
+                        @Faktura.Odbiorca_KodPocztowy @Faktura.Odbiorca_Miejscowosc
+                    </RadzenText>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenCard>
+    }
+
+    <!-- TABELA POZYCJI -->
+    <RadzenStack Gap="0.5rem">
+        <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-primary rz-m-0">Pozycje na dokumencie</RadzenText>
+        <RadzenDataGrid Data="@positions" TItem="FakturaPozycja" AllowPaging="false" AllowSorting="false">
+            <Columns>
+                <RadzenDataGridColumn TItem="FakturaPozycja" Property="Pozycja_Nazwa" Title="Nazwa pozycji">
+                    <Template Context="p">
+                        <span style="@GetPositionHighlightStyle(p, nameof(FakturaPozycja.Pozycja_Nazwa))">@p.Pozycja_Nazwa</span>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="FakturaPozycja" Property="Pozycja_Ilosc" Title="Ilość" Width="80px" TextAlign="TextAlign.Center">
+                    <Template Context="p">
+                        <span style="@GetPositionHighlightStyle(p, nameof(FakturaPozycja.Pozycja_Ilosc))">@p.Pozycja_Ilosc</span>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="FakturaPozycja" Property="Pozycja_Cena_Netto" Title="Cena netto" Width="120px" TextAlign="TextAlign.Right">
+                    <Template Context="p">
+                        <span style="@GetPositionHighlightStyle(p, nameof(FakturaPozycja.Pozycja_Cena_Netto))">@FormatPLN(p.Pozycja_Cena_Netto)</span>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="FakturaPozycja" Property="Pozycja_Stawka_VAT" Title="VAT" Width="80px" TextAlign="TextAlign.Center">
+                    <Template Context="p">
+                        <span style="@GetPositionHighlightStyle(p, nameof(FakturaPozycja.Pozycja_Stawka_VAT))">@p.Pozycja_Stawka_VAT</span>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="FakturaPozycja" Property="Pozycja_Wartosc_B" Title="Wartość brutto" Width="130px" TextAlign="TextAlign.Right">
+                    <Template Context="p"><strong>@FormatPLN(p.Pozycja_Wartosc_B)</strong></Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenStack>
+
+    <!-- PODSUMOWANIE I UWAGI -->
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeMD="7">
+            @if (!string.IsNullOrWhiteSpace(Faktura.Faktura_Uwagi))
+            {
+                <RadzenCard Variant="Variant.Filled" Class="rz-p-3" Style="height: 100%;">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Przyczyna korekty lub uwagi</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0" Style="@GetHighlightStyle(baseInvoice != null)">@Faktura.Faktura_Uwagi</RadzenText>
+                </RadzenCard>
+            }
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="5">
+            <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+                <RadzenStack Gap="0.5rem">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-text-secondary rz-m-0">Suma netto:</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0">@FormatPLN(sumaNetto)</RadzenText>
+                    </RadzenStack>
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-text-secondary rz-m-0">Suma VAT:</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0">@FormatPLN(sumaVat)</RadzenText>
+                    </RadzenStack>
+                    <RadzenDivider Class="rz-my-1" />
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.H6" Class="rz-color-primary rz-m-0">Razem brutto:</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H6" Class="rz-color-primary rz-m-0"><strong>@FormatPLN(Faktura.Kwota)</strong></RadzenText>
+                    </RadzenStack>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-mt-3">
+        <RadzenButton Text="Zamknij" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Click="@(() => DialogService.Close())" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public Faktura Faktura { get; set; } = new();
+
+    private KsefFaktura? ksefInfo;
+    private List<FakturaPozycja> positions = new();
+    private List<FakturaPozycja> basePositions = new();
+    private Faktura? baseInvoice;
+
+    private decimal sumaNetto;
+    private decimal sumaVat;
+    private bool hasDifferentRecipient;
+
+    private string GetHighlightStyle(bool isChanged, string baseStyle = "")
+    {
+        return isChanged ? $"{baseStyle} background-color: var(--rz-warning-lighter, #fffde7); color: var(--rz-text-color, #1a1a1a); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--rz-warning, #fbc02d); font-weight: 500;" : baseStyle;
+    }
+
+    private string GetPositionHighlightStyle(FakturaPozycja item, string propertyName)
+    {
+        if (baseInvoice == null) return string.Empty;
+
+        int index = positions.IndexOf(item);
+        if (index < 0 || index >= basePositions.Count)
+        {
+            return "background-color: var(--rz-warning-lighter, #fffde7); color: var(--rz-text-color, #1a1a1a); padding: 2px 4px; border-radius: 3px; border: 1px solid var(--rz-warning, #fbc02d); font-weight: 500;";
+        }
+
+        var orig = basePositions[index];
+        bool isDiff = propertyName switch
+        {
+            nameof(FakturaPozycja.Pozycja_Nazwa) => item.Pozycja_Nazwa != orig.Pozycja_Nazwa,
+            nameof(FakturaPozycja.Pozycja_Ilosc) => item.Pozycja_Ilosc != orig.Pozycja_Ilosc,
+            nameof(FakturaPozycja.Pozycja_Cena_Netto) => item.Pozycja_Cena_Netto != orig.Pozycja_Cena_Netto,
+            nameof(FakturaPozycja.Pozycja_Stawka_VAT) => item.Pozycja_Stawka_VAT != orig.Pozycja_Stawka_VAT,
+            _ => false
+        };
+
+        return isDiff ? "background-color: var(--rz-warning-lighter, #fffde7); color: var(--rz-text-color, #1a1a1a); padding: 2px 4px; border-radius: 3px; border: 1px solid var(--rz-warning, #fbc02d); font-weight: 500;" : string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Faktura != null)
+        {
+            positions = await FakturaService.GetInvoicePositionsAsync(Faktura.Guid);
+            sumaNetto = positions.Sum(p => p.Pozycja_Wartosc_N);
+            sumaVat = positions.Sum(p => p.Pozycja_Wartosc_VAT);
+
+            hasDifferentRecipient = !string.IsNullOrWhiteSpace(Faktura.Odbiorca_Nazwa) && 
+                                    !string.Equals(Faktura.Odbiorca_Nazwa.Trim(), Faktura.Nabywca_Nazwa?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            ksefInfo = await context.KsefFaktury.FirstOrDefaultAsync(k => k.Faktura_Guid == Faktura.Guid);
+
+            bool isCorrection = Faktura.Faktura_Typ == 1 || (Faktura.Faktura_Numer != null && Faktura.Faktura_Numer.Contains("FK"));
+            if (isCorrection)
+            {
+                var allInvoices = await FakturaService.GetInvoicesAsync();
+                if (Faktura.oGuid.HasValue)
+                {
+                    baseInvoice = allInvoices.FirstOrDefault(i => i.Guid == Faktura.oGuid.Value);
+                }
+                
+                if (baseInvoice == null && !string.IsNullOrWhiteSpace(Faktura.Faktura_Uwagi) && Faktura.Faktura_Uwagi.Contains("Korekta do faktury nr "))
+                {
+                    var part = Faktura.Faktura_Uwagi.Split("Korekta do faktury nr ")[1].Split(' ')[0].Trim();
+                    baseInvoice = allInvoices.FirstOrDefault(i => string.Equals(i.Faktura_Numer, part, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (baseInvoice != null)
+                {
+                    basePositions = await FakturaService.GetInvoicePositionsAsync(baseInvoice.Guid);
+                }
+            }
+        }
+    }
+
+    private string FormatPLN(decimal kwota) => $"{kwota:N2}\u00A0zł";
+}

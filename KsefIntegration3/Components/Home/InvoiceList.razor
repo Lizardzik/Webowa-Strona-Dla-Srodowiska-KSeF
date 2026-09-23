@@ -1,0 +1,130 @@
+﻿<RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Class="rz-mb-3">
+        <RadzenText TextStyle="TextStyle.H6" Class="rz-color-primary rz-font-weight-bold rz-m-0">
+            Ostatnie dokumenty
+        </RadzenText>
+        <RadzenButton Text="Zobacz wszystkie" Icon="arrow_forward" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => NavigationManager.NavigateTo("/faktury"))" />
+    </RadzenStack>
+
+    <RadzenDataGrid Data="@recentInvoices" TItem="Faktura" AllowSorting="true">
+        <EmptyTemplate>
+            <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Class="rz-p-5" Gap="0.75rem">
+                <RadzenIcon Icon="search_off" Style="font-size: 3rem; color: var(--rz-text-color-secondary); opacity: 0.6;" />
+                <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-m-0 rz-font-weight-bold">
+                    Brak danych do wyświetlenia
+                </RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">
+                    Nie wystawiono jeszcze żadnych faktur w systemie.
+                </RadzenText>
+            </RadzenStack>
+        </EmptyTemplate>
+        <Columns>
+            <!-- 1. NUMER DOKUMENTU -->
+            <RadzenDataGridColumn Property="Faktura_Numer" Title="Numer dokumentu" Width="190px">
+                <Template Context="faktura">
+                    <a style="font-weight: 700; cursor: pointer; color: var(--rz-primary); text-decoration: none;"
+                       @onclick="@(() => NavigateToDocument(faktura))"
+                       title="Kliknij, aby przejść do dokumentu na liście">
+                        @(string.IsNullOrEmpty(faktura.Faktura_Numer) ? $"FV/{faktura.Numer}" : faktura.Faktura_Numer)
+                    </a>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 2. NABYWCA -->
+            <RadzenDataGridColumn Property="NabywcaDisplayName" Title="Nabywca">
+                <Template Context="faktura">
+                    <span class="rz-font-weight-bold">@faktura.NabywcaDisplayName</span>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 3. DATA WYSTAWIENIA -->
+            <RadzenDataGridColumn Property="Data" Title="Data wystawienia" FormatString="{0:yyyy-MM-dd}" Width="140px" TextAlign="TextAlign.Center" />
+
+            <!-- 4. KWOTA BRUTTO -->
+            <RadzenDataGridColumn Property="Kwota" Title="Kwota brutto" TextAlign="TextAlign.Right" Width="140px">
+                <Template Context="faktura">
+                    <strong>@FormatPLN(faktura.Kwota)</strong>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 5. TYP DOKUMENTU -->
+            <RadzenDataGridColumn Property="Faktura_Typ" Title="Typ" Width="110px" TextAlign="TextAlign.Center">
+                <Template Context="faktura">
+                    <RadzenBadge BadgeStyle="@(IsCorrection(faktura) ? BadgeStyle.Warning : BadgeStyle.Primary)"
+                                 Variant="Variant.Flat"
+                                 Text="@(IsCorrection(faktura) ? "Korekta" : "VAT")" />
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 6. AKCJE -->
+            <RadzenDataGridColumn TItem="Faktura" Title="Akcje" Width="110px" Sortable="false" TextAlign="TextAlign.Center">
+                <Template Context="faktura">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="0.25rem">
+                        <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => PreviewInvoice(faktura))" Title="Podgląd" />
+                        <RadzenButton Icon="picture_as_pdf" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => DownloadInvoice(faktura))" IsBusy="@isGeneratingPdf" Title="Pobierz PDF" />
+                    </RadzenStack>
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<Faktura> recentInvoices = new();
+    private bool isGeneratingPdf = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        recentInvoices = await FakturaService.GetRecentInvoicesAsync(5);
+    }
+
+    private string FormatPLN(decimal amount) => $"{amount:N2}\u00A0zł";
+
+    private bool IsCorrection(Faktura f)
+    {
+        return f.Faktura_Typ == 1 || (f.Faktura_Numer != null && f.Faktura_Numer.Contains("FK"));
+    }
+
+    private void NavigateToDocument(Faktura faktura)
+    {
+        string num = faktura.Faktura_Numer ?? string.Empty;
+        bool isCorr = IsCorrection(faktura);
+
+        NavigationManager.NavigateTo($"/faktury?search={Uri.EscapeDataString(num)}&corrections={isCorr.ToString().ToLower()}");
+    }
+
+    private async Task PreviewInvoice(Faktura faktura)
+    {
+        await DialogService.OpenAsync<InvoicePreviewDialog>(
+            $"Podgląd dokumentu: {faktura.Faktura_Numer}",
+            new Dictionary<string, object> { { "Faktura", faktura } },
+            new DialogOptions { Width = "800px" }
+        );
+    }
+
+    private async Task DownloadInvoice(Faktura faktura)
+    {
+        isGeneratingPdf = true;
+        try
+        {
+            var positions = await FakturaService.GetInvoicePositionsAsync(faktura.Guid);
+            var pdfStream = await DokumentyService.GeneratePdfAsync(faktura, positions);
+            using var jsStream = new DotNetStreamReference(pdfStream);
+            await JSRuntime.InvokeVoidAsync("openPdfInNewTab", jsStream);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Błąd generowania PDF",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            isGeneratingPdf = false;
+        }
+    }
+}

@@ -1,0 +1,182 @@
+﻿<RadzenCard Variant="Variant.Filled" Class="rz-p-4 rz-mb-4">
+    <RadzenRow AlignItems="AlignItems.Center" RowGap="2" Class="rz-mb-4">
+        <RadzenColumn Size="12" SizeMD="5">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                <RadzenIcon Icon="bar_chart" Class="rz-color-primary" Style="font-size: 1.8rem;" />
+                <div>
+                    <RadzenText TextStyle="TextStyle.H6" Class="rz-m-0 rz-font-weight-bold">
+                        Wykres sprzedaży
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">
+                        Widok: <strong class="rz-color-primary">@chartTitle</strong>
+                    </RadzenText>
+                </div>
+            </RadzenStack>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="7">
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center" Gap="0.5rem" Wrap="FlexWrap.Wrap">
+                <RadzenDropDown TValue="string"
+                                Value="@selectedType"
+                                ValueChanged="@OnTypeChanged"
+                                Data="@typeOptions"
+                                Style="min-width: 120px;" />
+
+                @if (selectedType == "Półrocze")
+                {
+                    <RadzenDropDown TValue="string"
+                                    Value="@selectedOption"
+                                    ValueChanged="@OnOptionChanged"
+                                    Data="@halfYearOptions"
+                                    Style="min-width: 140px;" />
+                }
+                else if (selectedType == "Kwartał")
+                {
+                    <RadzenDropDown TValue="string"
+                                    Value="@selectedOption"
+                                    ValueChanged="@OnOptionChanged"
+                                    Data="@quarterOptions"
+                                    Style="min-width: 140px;" />
+                }
+
+                <RadzenDropDown TValue="string"
+                                Value="@selectedYear"
+                                ValueChanged="@OnYearChanged"
+                                Data="@yearOptions"
+                                Style="min-width: 100px;" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenChart Style="height: 350px;">
+        <!-- SŁUPEK NETTO: Wyrazisty niebieski / kobalt -->
+        <RadzenColumnSeries TItem="ChartEntry"
+                            Data="@chartData"
+                            CategoryProperty="Month"
+                            Title="Przychód Netto"
+                            ValueProperty="Netto"
+                            Fill="#3b82f6">
+            <TooltipTemplate Context="data">
+                <div class="rz-p-1">
+                    Netto (@data.Month): <strong>@FormatAsPLN(data.Netto)</strong>
+                </div>
+            </TooltipTemplate>
+        </RadzenColumnSeries>
+
+        <!-- SŁUPEK VAT: Szmaragd / żywa zieleń -->
+        <RadzenColumnSeries TItem="ChartEntry"
+                            Data="@chartData"
+                            CategoryProperty="Month"
+                            Title="Podatek VAT"
+                            ValueProperty="Vat"
+                            Fill="#10b981">
+            <TooltipTemplate Context="data">
+                <div class="rz-p-1">
+                    VAT (@data.Month): <strong>@FormatAsPLN(data.Vat)</strong>
+                </div>
+            </TooltipTemplate>
+        </RadzenColumnSeries>
+
+        <RadzenColumnOptions Radius="6" />
+        <RadzenValueAxis Min="0" Step="3000" Formatter="@FormatAsPLN">
+            <RadzenGridLines Visible="true" Stroke="var(--rz-border-color)" />
+        </RadzenValueAxis>
+        <RadzenCategoryAxis>
+            <RadzenGridLines Visible="false" />
+        </RadzenCategoryAxis>
+        <RadzenLegend Position="LegendPosition.Bottom" />
+    </RadzenChart>
+</RadzenCard>
+
+@code {
+    private class ChartEntry
+    {
+        public string Month { get; set; } = string.Empty;
+        public double Netto { get; set; }
+        public double Vat { get; set; }
+    }
+
+    private string selectedType = "Rok";
+    private string selectedOption = "";
+    private string selectedYear = DateTime.Now.Year.ToString();
+    private string chartTitle = "";
+
+    private List<ChartEntry> chartData = new();
+
+    private List<string> typeOptions = new() { "Rok", "Półrocze", "Kwartał" };
+    private List<string> halfYearOptions = HelperService.GetHalfYears();
+    private List<string> quarterOptions = HelperService.GetQuarters();
+    private List<string> yearOptions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        int currentYear = DateTime.Now.Year;
+        yearOptions = Enumerable.Range(currentYear - 3, 5).OrderByDescending(y => y).Select(y => y.ToString()).ToList();
+        selectedYear = currentYear.ToString();
+
+        await RefreshChartAsync();
+    }
+
+    private async Task OnTypeChanged(string newType)
+    {
+        selectedType = newType;
+
+        if (newType == "Półrocze")
+        {
+            int currentHalfIdx = DateTime.Now.Month <= 6 ? 0 : 1;
+            selectedOption = halfYearOptions.Count > currentHalfIdx ? halfYearOptions[currentHalfIdx] : halfYearOptions.First();
+        }
+        else if (newType == "Kwartał")
+        {
+            int currentQuarterIdx = (DateTime.Now.Month - 1) / 3;
+            selectedOption = quarterOptions.Count > currentQuarterIdx ? quarterOptions[currentQuarterIdx] : quarterOptions.First();
+        }
+        else
+        {
+            selectedOption = "";
+        }
+
+        await RefreshChartAsync();
+    }
+
+    private async Task OnOptionChanged(string newOption)
+    {
+        selectedOption = newOption;
+        await RefreshChartAsync();
+    }
+
+    private async Task OnYearChanged(string newYear)
+    {
+        selectedYear = newYear;
+        await RefreshChartAsync();
+    }
+
+    public async Task RefreshChartAsync()
+    {
+        chartTitle = selectedType switch
+        {
+            "Półrocze" => $"{selectedOption} {selectedYear} r.",
+            "Kwartał" => $"{selectedOption} {selectedYear} r.",
+            "Rok" => $"Cały rok {selectedYear}",
+            _ => selectedYear
+        };
+
+        var rawSales = await DashboardService.GetChartDataAsync(selectedType, selectedOption, selectedYear);
+
+        chartData = rawSales.Select(s => new ChartEntry
+        {
+            Month = s.Month,
+            Netto = Math.Round(s.Amount / 1.23, 2),
+            Vat = Math.Round(s.Amount - (s.Amount / 1.23), 2)
+        }).ToList();
+    }
+
+    private string FormatAsPLN(object value)
+    {
+        if (value is double number)
+        {
+            return $"{Math.Round(number):N0} zł";
+        }
+        return value?.ToString() ?? string.Empty;
+    }
+}

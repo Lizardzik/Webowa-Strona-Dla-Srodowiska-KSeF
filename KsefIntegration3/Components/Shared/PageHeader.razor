@@ -1,0 +1,31 @@
+﻿<RadzenCard Class="rz-p-4 rz-mb-4">
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+        <RadzenStack Gap="0.25rem">
+            <RadzenText TextStyle="TextStyle.H5" Class="rz-m-0">
+                @Title
+            </RadzenText>
+            @if (!string.IsNullOrWhiteSpace(Subtitle))
+            {
+                <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-text-secondary rz-m-0">
+                    @Subtitle
+                </RadzenText>
+            }
+        </RadzenStack>
+
+        @if (ShowButton)
+        {
+            <RadzenButton Text="@ButtonText" Icon="@ButtonIcon" ButtonStyle="ButtonStyle.Primary" Click="@OnButtonClick" />
+        }
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Subtitle { get; set; } = string.Empty;
+
+    [Parameter] public bool ShowButton { get; set; } = true;
+    [Parameter] public string ButtonText { get; set; } = string.Empty;
+    [Parameter] public string ButtonIcon { get; set; } = "add";
+
+    [Parameter] public EventCallback OnButtonClick { get; set; }
+}

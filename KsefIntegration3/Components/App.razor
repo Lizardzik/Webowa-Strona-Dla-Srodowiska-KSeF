@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="KsefIntegration3.styles.css" />
+    <link id="radzen-theme" rel="stylesheet" href="_content/Radzen.Blazor/css/humanistic.css" />
+    <HeadOutlet @rendermode="InteractiveServer" />
+</head>
+<body>
+    <Routes @rendermode="InteractiveServer" />
+
+    <script src="_framework/blazor.web.js"></script>
+    <script src="app.js"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+    <script>
+            window.changeTheme = function (isDark) {
+                var theme = isDark ? 'humanistic-dark' : 'humanistic';
+                var link = document.getElementById('radzen-theme');
+                if (link) {
+                    link.href = '_content/Radzen.Blazor/css/' + theme + '.css';
+                }
+            };
+    </script>
+
+    <RadzenComponents @rendermode="InteractiveServer" />
+</body>
+</html>

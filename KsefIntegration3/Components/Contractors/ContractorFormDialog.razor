@@ -1,0 +1,346 @@
+﻿<RadzenStack Gap="1.25rem" Class="rz-p-2" Style="max-height: 80vh; overflow-y: auto;">
+
+    <!-- SEKCJA 1: TYP I STATUS -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+        <RadzenRow AlignItems="AlignItems.Center" Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="@(isEditMode ? 6 : 12)">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Typ podmiotu</RadzenText>
+                <RadzenSelectBar @bind-Value="@isCompany" TValue="bool" Change="@OnTypeChanged" Style="width: 100%;">
+                    <Items>
+                        <RadzenSelectBarItem Text="Firma" Value="true" />
+                        <RadzenSelectBarItem Text="Osoba fizyczna" Value="false" />
+                    </Items>
+                </RadzenSelectBar>
+            </RadzenColumn>
+            @if (isEditMode)
+            {
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Status w systemie</RadzenText>
+                    <RadzenSelectBar @bind-Value="@model.Status" TValue="bool" Style="width: 100%;">
+                        <Items>
+                            <RadzenSelectBarItem Text="Aktywny" Value="true" />
+                            <RadzenSelectBarItem Text="Nieaktywny" Value="false" />
+                        </Items>
+                    </RadzenSelectBar>
+                </RadzenColumn>
+            }
+        </RadzenRow>
+    </RadzenCard>
+
+    <!-- SEKCJA 2: DANE IDENTYFIKACYJNE -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+        <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-primary rz-font-weight-bold rz-mb-2">
+            Dane identyfikacyjne
+        </RadzenText>
+        <RadzenDivider Class="rz-mb-3" />
+
+        @if (isCompany)
+        {
+            <RadzenRow AlignItems="AlignItems.End" Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Kod kraju</RadzenText>
+                    <RadzenDropDown @bind-Value="@model.Kod_Kraju" Data="@countries" Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="@(!isEditMode ? 5 : 9)">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">NIP</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.NIP" Placeholder="10 cyfr NIP" Style="width: 100%;" />
+                </RadzenColumn>
+                @if (!isEditMode)
+                {
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenButton Text="Pobierz z GUS" Icon="search" ButtonStyle="ButtonStyle.Secondary" Style="width: 100%; height: 38px;"
+                                      Click="@FetchGus" IsBusy="@isLoadingGus" Disabled="@(model.Kod_Kraju != "PL")" />
+                    </RadzenColumn>
+                }
+            </RadzenRow>
+
+            <RadzenRow Gap="1rem" Class="rz-mt-3">
+                <RadzenColumn Size="12" SizeMD="8">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Pełna nazwa firmy</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Nazwa" Placeholder="Tatry Ski Resort Sp. z o.o." Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">REGON</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Regon" Placeholder="Numer REGON" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+        }
+        else
+        {
+            <RadzenRow AlignItems="AlignItems.End" Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Kod kraju</RadzenText>
+                    <RadzenDropDown @bind-Value="@model.Kod_Kraju" Data="@countries" Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="5">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Imię</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Imie" Placeholder="Jan" Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Nazwisko</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Nazwisko" Placeholder="Kowalski" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+        }
+    </RadzenCard>
+
+    <!-- SEKCJA 3: ADRES -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+        <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-primary rz-font-weight-bold rz-mb-2">
+            @(isCompany ? "Adres siedziby" : "Adres zamieszkania")
+        </RadzenText>
+        <RadzenDivider Class="rz-mb-3" />
+
+        <RadzenRow Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="8">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Ulica</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Ulica" Placeholder="Krupówki" Style="width: 100%;" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Numer domu</RadzenText>
+                <RadzenTextBox @bind-Value="@model.NumerDomu" Placeholder="12A" Style="width: 100%;" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenRow Gap="1rem" Class="rz-mt-3">
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Kod pocztowy</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Kod_Pocztowy" Placeholder="34-500" Style="width: 100%;" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="8">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Miejscowość</RadzenText>
+                <RadzenTextBox @bind-Value="@model.Miejscowosc" Placeholder="Zakopane" Style="width: 100%;" />
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    <!-- PRZYCISKI AKCJI -->
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-mt-2" Gap="0.75rem">
+        <RadzenButton Text="Anuluj" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Click="@Cancel" />
+        <RadzenButton Text="Zapisz" Icon="save" ButtonStyle="ButtonStyle.Primary" Click="@Save" IsBusy="@isSaving" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public Kontrahent? ContractorToEdit { get; set; }
+
+    private Kontrahent model = new();
+    private bool isEditMode = false;
+    private bool isCompany = true;
+    private bool isLoadingGus = false;
+    private bool isSaving = false;
+    private List<string> countries = new();
+
+    protected override void OnInitialized()
+    {
+        var isoCountries = HelperService.GetIsoCountries();
+        var topCountries = new List<string> { "PL", "SK", "CZ", "DE", "AT" };
+        countries = new List<string>(topCountries);
+        countries.AddRange(isoCountries.Where(c => !topCountries.Contains(c)));
+
+        if (ContractorToEdit != null && ContractorToEdit.Id > 0)
+        {
+            isEditMode = true;
+            model = new Kontrahent
+            {
+                Id = ContractorToEdit.Id,
+                Nazwa = ContractorToEdit.Nazwa,
+                Imie = ContractorToEdit.Imie,
+                Nazwisko = ContractorToEdit.Nazwisko,
+                NIP = ContractorToEdit.NIP,
+                Regon = ContractorToEdit.Regon,
+                Ulica = ContractorToEdit.Ulica,
+                NumerDomu = ContractorToEdit.NumerDomu,
+                Kod_Pocztowy = ContractorToEdit.Kod_Pocztowy,
+                Miejscowosc = ContractorToEdit.Miejscowosc,
+                Kod_Kraju = ContractorToEdit.Kod_Kraju,
+                Status = ContractorToEdit.Status,
+                Guid = ContractorToEdit.Guid,
+                Typ = ContractorToEdit.Typ,
+                Kontrahent_Rodzaj = ContractorToEdit.Kontrahent_Rodzaj
+            };
+
+            isCompany = model.Typ != "Osoba fizyczna" && (string.IsNullOrWhiteSpace(model.Typ) ? !string.IsNullOrWhiteSpace(model.Nazwa) : model.Typ == "Firma");
+        }
+        else
+        {
+            isEditMode = false;
+            isCompany = true;
+            model = new Kontrahent
+            {
+                Kod_Kraju = "PL",
+                Status = true,
+                Kontrahent_Rodzaj = 1,
+                Typ = "Firma"
+            };
+        }
+    }
+
+    private void OnTypeChanged(bool val)
+    {
+        isCompany = val;
+        if (!isCompany)
+        {
+            model.NIP = null;
+            model.Regon = null;
+            model.Nazwa = null;
+        }
+        StateHasChanged();
+    }
+
+    private async Task FetchGus()
+    {
+        if (!isCompany) return;
+        isLoadingGus = true;
+
+        if (string.IsNullOrWhiteSpace(model.NIP))
+        {
+            var random = new Random();
+            model.NIP = $"525{random.Next(1000000, 9999999)}";
+        }
+
+        var gusResult = await KontrahentService.FetchFromGusAsync(model.NIP);
+
+        if (gusResult != null)
+        {
+            model.Nazwa = gusResult.Nazwa;
+            model.Regon = gusResult.Regon;
+            model.Ulica = gusResult.Ulica;
+            model.NumerDomu = gusResult.NumerDomu;
+            model.Kod_Pocztowy = "00-001";
+            model.Miejscowosc = gusResult.Miejscowosc;
+            await PreferencesService.NotifyAsync(NotificationSeverity.Info, "GUS", "Pobrano dane z GUS.");
+        }
+
+        isLoadingGus = false;
+    }
+
+    private void Cancel() => DialogService.Close(false);
+
+    private async Task Save()
+    {
+        if (isSaving) return;
+
+        if (isCompany)
+        {
+            if (string.IsNullOrWhiteSpace(model.NIP))
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Wpisz NIP firmy.");
+                return;
+            }
+
+            string cleanNip = model.NIP.Replace("-", "").Replace(" ", "").Trim();
+            if (model.Kod_Kraju == "PL")
+            {
+                if (cleanNip.Length != 10 || !cleanNip.All(char.IsDigit))
+                {
+                    await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędny NIP", "Polski NIP musi składać się z dokładnie 10 cyfr.");
+                    return;
+                }
+            }
+            model.NIP = cleanNip;
+
+            if (string.IsNullOrWhiteSpace(model.Nazwa))
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Wpisz pełną nazwę firmy.");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Regon))
+            {
+                string cleanRegon = model.Regon.Trim();
+                if ((cleanRegon.Length != 9 && cleanRegon.Length != 14) || !cleanRegon.All(char.IsDigit))
+                {
+                    await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędny REGON", "REGON musi mieć 9 lub 14 cyfr.");
+                    return;
+                }
+                model.Regon = cleanRegon;
+            }
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(model.Imie) || string.IsNullOrWhiteSpace(model.Nazwisko))
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Wpisz imię i nazwisko.");
+                return;
+            }
+
+            model.NIP = null;
+            model.Regon = null;
+            model.Nazwa = null;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Ulica))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Wpisz ulicę.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.NumerDomu))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Wpisz numer domu.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Miejscowosc))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Wpisz miejscowość.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Kod_Pocztowy))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Wpisz kod pocztowy.");
+            return;
+        }
+
+        if (model.Kod_Kraju == "PL")
+        {
+            bool isZipValid = System.Text.RegularExpressions.Regex.IsMatch(model.Kod_Pocztowy.Trim(), @"^[0-9]{2}-[0-9]{3}$");
+            if (!isZipValid)
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędny kod pocztowy", "Kod pocztowy w Polsce musi mieć format XX-XXX.");
+                return;
+            }
+        }
+
+        isSaving = true;
+
+        try
+        {
+            model.Typ = isCompany ? "Firma" : "Osoba fizyczna";
+            model.Kontrahent_Rodzaj = isCompany ? 1 : 2;
+
+            await LoadingService.WrapWithDelayAsync(async () =>
+            {
+                if (isEditMode)
+                {
+                    await KontrahentService.UpdateContractorAsync(model);
+                }
+                else
+                {
+                    await KontrahentService.AddContractorAsync(model);
+                }
+            }, 800, isEditMode ? "Aktualizowanie kontrahenta..." : "Zapisywanie kontrahenta...");
+
+            if (isEditMode)
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Success, "Zaktualizowano", $"Zmieniono dane: {model.DisplayName}");
+            }
+            else
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Success, "Zapisano", $"Dodano: {model.DisplayName}");
+            }
+
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Error, "Błąd", ex.Message);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

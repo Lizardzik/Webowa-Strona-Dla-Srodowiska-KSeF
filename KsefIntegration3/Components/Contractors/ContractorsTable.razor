@@ -1,0 +1,299 @@
+﻿<FilterCard Title="Filtruj bazę kontrahentów">
+    <RadzenRow AlignItems="AlignItems.Center" Gap="1rem">
+        <RadzenColumn Size="12" SizeMD="4">
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Szukaj kontrahenta</RadzenText>
+            <RadzenTextBox Placeholder="Wpisz nazwę lub NIP..."
+                           Value="@searchTerm"
+                           @oninput="@OnContractorSearchInput"
+                           Style="width: 100%;" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Kraj</RadzenText>
+            <RadzenDropDown TValue="string" @bind-Value="@selectedCountry" Data="@countryOptions" Style="width: 100%;" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="6" SizeMD="2">
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Typ</RadzenText>
+            <RadzenDropDown TValue="string" @bind-Value="@selectedType" Data="@typeOptions" Style="width: 100%;" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="4" Class="rz-d-flex rz-align-items-center rz-mt-3">
+            <RadzenSelectBar @bind-Value="@showInactiveOnly" TValue="bool">
+                <Items>
+                    <RadzenSelectBarItem Text="Aktywni" Value="false" />
+                    <RadzenSelectBarItem Text="Nieaktywni" Value="true" />
+                </Items>
+            </RadzenSelectBar>
+        </RadzenColumn>
+    </RadzenRow>
+</FilterCard>
+
+<RadzenCard Class="rz-p-4">
+    <RadzenDataGrid Data="@FilteredContractors" TItem="Kontrahent" AllowSorting="true" AllowPaging="true" PageSize="@pageSize" Class="rz-font-size-md">
+        <EmptyTemplate>
+            <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Class="rz-p-5" Gap="0.75rem">
+                <RadzenIcon Icon="search_off" Style="font-size: 3rem; color: var(--rz-text-color-secondary); opacity: 0.6;" />
+                <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-m-0 rz-font-weight-bold">
+                    Brak danych do wyświetlenia
+                </RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">
+                    Nie znaleziono pozycji spełniających wybrane kryteria lub lista jest pusta.
+                </RadzenText>
+            </RadzenStack>
+        </EmptyTemplate>
+        <Columns>
+            <!-- 1. NAZWA KONTRAHENTA -->
+            <RadzenDataGridColumn Property="DisplayName" Title="Kontrahent">
+                <Template Context="c">
+                    <RadzenStack Gap="0.1rem">
+                        <strong>@c.DisplayName</strong>
+                        <span style="font-size: 0.75rem; color: var(--rz-text-color-secondary);">
+                            @(c.Typ == "Firma" ? "Podmiot gospodarczy" : "Osoba prywatna")
+                        </span>
+                    </RadzenStack>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 2. NIP -->
+            <RadzenDataGridColumn Property="NIP" Title="NIP" Width="140px">
+                <Template Context="c">
+                    <span style="font-family: monospace; font-size: 0.9rem;">
+                        @(string.IsNullOrEmpty(c.NIP) ? "-" : c.NIP)
+                    </span>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 3. KRAJ -->
+            <RadzenDataGridColumn Property="Kod_Kraju" Title="Kraj" Width="80px" TextAlign="TextAlign.Center">
+                <Template Context="c">
+                    <RadzenBadge BadgeStyle="BadgeStyle.Light" Text="@(string.IsNullOrEmpty(c.Kod_Kraju) ? "PL" : c.Kod_Kraju)" IsPill="true" />
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 4. ADRES -->
+            <RadzenDataGridColumn Property="FullAddress" Title="Adres">
+                <Template Context="c">
+                    <span style="font-size: 0.9rem;">@c.FullAddress</span>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 5. STATUS -->
+            <RadzenDataGridColumn Property="Status" Title="Status" Width="120px" TextAlign="TextAlign.Center">
+                <Template Context="c">
+                    @if (c.Status)
+                    {
+                        <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Aktywny" Variant="Variant.Flat" IsPill="true" />
+                    }
+                    else
+                    {
+                        <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Nieaktywny" Variant="Variant.Flat" IsPill="true" />
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- 6. AKCJE -->
+            <RadzenDataGridColumn TItem="Kontrahent" Title="Akcje" Width="140px" Sortable="false" TextAlign="TextAlign.Center">
+                <Template Context="c">
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="0.25rem">
+                        <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => ShowDetails(c))" Title="Szczegóły" />
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => OpenEditModal(c))" Title="Edycja" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => OpenDeleteModal(c))" Title="Usuń" />
+                    </RadzenStack>
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-mt-2">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary">
+            Wyświetlanie <strong>@pageSize</strong> wierszy na stronę
+        </RadzenText>
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    private int pageSize;
+    private bool isSettingsLoaded = false;
+    private static bool isContractorsLoaded = false;
+
+    private string searchTerm = string.Empty;
+    private bool showInactiveOnly = false;
+    private string selectedCountry = "Wszystkie";
+    private string selectedType = "Wszystkie";
+
+    private List<string> countryOptions = new() { "Wszystkie" };
+    private List<string> typeOptions = new() { "Wszystkie", "Firma", "Osoba fizyczna" };
+
+    private List<Kontrahent> contractorsList = new();
+
+    private System.Timers.Timer? contractorSearchTimer;
+
+    private void OnContractorSearchInput(ChangeEventArgs args)
+    {
+        searchTerm = args.Value?.ToString() ?? string.Empty;
+
+        contractorSearchTimer?.Stop();
+        contractorSearchTimer?.Dispose();
+
+        contractorSearchTimer = new System.Timers.Timer(350);
+        contractorSearchTimer.AutoReset = false;
+        contractorSearchTimer.Elapsed += async (s, e) =>
+        {
+            await InvokeAsync(StateHasChanged);
+        };
+        contractorSearchTimer.Start();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var isoCountries = HelperService.GetIsoCountries();
+        var topCountries = new List<string> { "PL", "SK", "CZ", "DE", "AT" };
+
+        countryOptions = new List<string> { "Wszystkie" };
+        countryOptions.AddRange(topCountries);
+        countryOptions.AddRange(isoCountries.Where(c => !topCountries.Contains(c)));
+
+        try
+        {
+            var settings = await PreferencesService.GetSettingsAsync();
+            if (settings != null && settings.DefaultPageSize > 0)
+            {
+                pageSize = settings.DefaultPageSize;
+                isSettingsLoaded = true;
+            }
+        }
+        catch
+        {
+            // fallback
+        }
+
+        await RefreshDataAsync();
+    }
+
+    public async Task RefreshDataAsync()
+    {
+        if (!isContractorsLoaded)
+        {
+            LoadingService.Show("Pobieranie bazy kontrahentów...");
+        }
+
+        try
+        {
+            contractorsList = await KontrahentService.GetContractorsAsync();
+            if (!isContractorsLoaded)
+            {
+                await Task.Delay(500);
+            }
+        }
+        finally
+        {
+            if (!isContractorsLoaded)
+            {
+                LoadingService.Hide();
+                isContractorsLoaded = true;
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private IEnumerable<Kontrahent> FilteredContractors
+    {
+        get
+        {
+            var query = contractorsList.AsEnumerable();
+            query = query.Where(c => showInactiveOnly ? !c.Status : c.Status);
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                query = query.Where(c =>
+                    (!string.IsNullOrEmpty(c.Nazwa) && c.Nazwa.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(c.Imie) && c.Imie.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(c.Nazwisko) && c.Nazwisko.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(c.NIP) && c.NIP.Contains(searchTerm)));
+            }
+
+            if (selectedCountry != "Wszystkie")
+            {
+                query = query.Where(c => (string.IsNullOrEmpty(c.Kod_Kraju) ? "PL" : c.Kod_Kraju) == selectedCountry);
+            }
+
+            if (selectedType != "Wszystkie")
+            {
+                if (selectedType == "Osoba fizyczna")
+                {
+                    query = query.Where(c => c.Typ == "Osoba fizyczna" || c.Typ == "Osoba");
+                }
+                else
+                {
+                    query = query.Where(c => c.Typ == selectedType);
+                }
+            }
+
+            return query;
+        }
+    }
+
+    private async Task ShowDetails(Kontrahent contractor)
+    {
+        await DialogService.OpenAsync<ContractorDetailsDialog>(
+            "Informacje o kontrahencie",
+            new Dictionary<string, object> { { "Contractor", contractor } },
+            new DialogOptions { Width = "580px" }
+        );
+    }
+
+    private async Task OpenEditModal(Kontrahent contractor)
+    {
+        var result = await DialogService.OpenAsync<ContractorFormDialog>(
+            "Edycja kontrahenta",
+            new Dictionary<string, object> { { "ContractorToEdit", contractor } },
+            new DialogOptions { Width = "650px" }
+        );
+
+        if (result == true)
+        {
+            await RefreshDataAsync();
+        }
+    }
+
+    private async Task OpenDeleteModal(Kontrahent contractor)
+    {
+        bool? confirm = await DialogService.Confirm(
+            $"Czy na pewno chcesz usunąć kontrahenta '{contractor.DisplayName}' z bazy danych?",
+            "Usuwanie kontrahenta",
+            new ConfirmOptions { OkButtonText = "Tak, usuń", CancelButtonText = "Anuluj" }
+        );
+
+        if (confirm == true)
+        {
+            string name = contractor.DisplayName;
+            bool success = false;
+
+            LoadingService.Show($"Usuwanie kontrahenta {name}...");
+            try
+            {
+                success = await KontrahentService.DeleteContractorAsync(contractor.Id);
+            }
+            finally
+            {
+                LoadingService.Hide();
+            }
+
+            if (success)
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Usunięto",
+                    Detail = $"Kontrahent '{name}' został usunięty z bazy.",
+                    Duration = 3000
+                });
+                await RefreshDataAsync();
+            }
+        }
+    }
+
+    private string FormatPLN(decimal amount) => $"{amount:N2}\u00A0zł";
+}

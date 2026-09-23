@@ -1,0 +1,72 @@
+﻿<RadzenStack Gap="1.25rem" Class="rz-p-2">
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="6">
+            <RadzenCard Variant="Variant.Flat" Class="rz-p-3">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Wystawione faktury</RadzenText>
+                <RadzenText TextStyle="TextStyle.H5" Class="rz-m-0"><strong>@invoiceCount szt.</strong></RadzenText>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6">
+            <RadzenCard Variant="Variant.Flat" Class="rz-p-3">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Łączny obrót brutto</RadzenText>
+                <RadzenText TextStyle="TextStyle.H5" Class="rz-m-0" Style="color: var(--rz-primary);"><strong>@FormatPLN(totalSalesAmount)</strong></RadzenText>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard Variant="Variant.Flat" Class="rz-p-3">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Nazwa / Firma / Imię i nazwisko</RadzenText>
+        <RadzenText TextStyle="TextStyle.H6" Class="rz-m-0" Style="color: var(--rz-primary);"><strong>@Contractor.DisplayName</strong></RadzenText>
+
+        <RadzenRow Class="rz-mt-3" Gap="1rem">
+            <RadzenColumn Size="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">NIP / Tax ID</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0"><strong>@(string.IsNullOrEmpty(Contractor.NIP) ? "-" : Contractor.NIP)</strong></RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">REGON</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0"><strong>@(string.IsNullOrEmpty(Contractor.Regon) ? "-" : Contractor.Regon)</strong></RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Kraj</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0"><strong>@(string.IsNullOrEmpty(Contractor.Kod_Kraju) ? "PL" : Contractor.Kod_Kraju)</strong></RadzenText>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    <RadzenCard Variant="Variant.Flat" Class="rz-p-3">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Adres rejestrowy do faktury</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0">@Contractor.FullAddress</RadzenText>
+    </RadzenCard>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-mt-2">
+        <RadzenButton Text="Zamknij" ButtonStyle="ButtonStyle.Secondary" Click="@(() => DialogService.Close())" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public Kontrahent Contractor { get; set; } = new();
+
+    private int invoiceCount;
+    private decimal totalSalesAmount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Contractor != null)
+        {
+            var allInvoices = await FakturaService.GetInvoicesAsync();
+            string targetNip = Contractor.NIP?.Trim() ?? string.Empty;
+            string targetName = Contractor.DisplayName?.Trim() ?? string.Empty;
+
+            var contractorInvoices = allInvoices.Where(i =>
+                (!string.IsNullOrWhiteSpace(targetNip) && string.Equals(i.Nabywca_NIP?.Trim(), targetNip, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(targetName) && string.Equals(i.Nabywca_Nazwa?.Trim(), targetName, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+
+            invoiceCount = contractorInvoices.Count;
+            totalSalesAmount = contractorInvoices.Sum(i => i.Kwota);
+        }
+    }
+
+    private string FormatPLN(decimal amount) => $"{amount:N2}\u00A0zł";
+}

@@ -1,0 +1,31 @@
+﻿@page "/kontrahenci"
+
+<PageTitle>Baza kontrahentów - Ski Control</PageTitle>
+
+<RadzenStack Gap="1.5rem">
+    <PageHeader Title="Baza kontrahentów"
+                Subtitle="Zarządzaj zaufanymi partnerami do szybkiego wystawiania faktur"
+                ButtonText="Dodaj kontrahenta"
+                ButtonIcon="person_add"
+                OnButtonClick="@OpenAddDialog" />
+
+    <ContractorsTable @ref="tableRef" />
+</RadzenStack>
+
+@code {
+    private ContractorsTable? tableRef;
+
+    private async Task OpenAddDialog()
+    {
+        var result = await DialogService.OpenAsync<ContractorFormDialog>(
+            "Dodaj nowego kontrahenta",
+            null,
+            new DialogOptions { Width = "650px" }
+        );
+
+        if (result == true && tableRef != null)
+        {
+            await tableRef.RefreshDataAsync();
+        }
+    }
+}

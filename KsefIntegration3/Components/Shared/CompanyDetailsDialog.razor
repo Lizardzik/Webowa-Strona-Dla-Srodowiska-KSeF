@@ -1,0 +1,51 @@
+﻿<RadzenStack Gap="1.25rem" Class="rz-p-2" Style="max-height: 80vh; overflow-y: auto;">
+    <!-- DANE GŁÓWNE -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Pełna nazwa firmy</RadzenText>
+        <RadzenText TextStyle="TextStyle.H6" Class="rz-m-0 rz-font-weight-bold rz-color-primary">@ConfigData.Sprzedawca_Nazwa</RadzenText>
+
+        <RadzenRow Class="rz-mt-3" Gap="1rem">
+            <RadzenColumn Size="6">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">NIP</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0 rz-font-weight-bold">@(string.IsNullOrEmpty(ConfigData.Sprzedawca_NIP) ? "-" : ConfigData.Sprzedawca_NIP)</RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="6">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Numer BDO</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0 rz-font-weight-bold">@(string.IsNullOrEmpty(ConfigData.Sprzedawca_Numer_BDO) ? "-" : ConfigData.Sprzedawca_Numer_BDO)</RadzenText>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    <!-- ADRES SIEDZIBY -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Adres rejestrowy</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0 rz-font-weight-bold">
+            @ConfigData.Sprzedawca_Ulica @ConfigData.Sprzedawca_UlicaNr
+        </RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-text-secondary rz-m-0">
+            @ConfigData.Sprzedawca_KodPocztowy @ConfigData.Sprzedawca_Miejscowosc
+        </RadzenText>
+    </RadzenCard>
+
+    <!-- BANK I DOMYŚLNE MIEJSCE -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-4">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Konto bankowe</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-m-0 rz-font-weight-bold">@(string.IsNullOrEmpty(ConfigData.Sprzedawca_BankNazwa) ? "Brak banku" : ConfigData.Sprzedawca_BankNazwa)</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body1" Class="rz-mb-3">@(string.IsNullOrEmpty(ConfigData.Sprzedawca_BankKonto) ? "-" : ConfigData.Sprzedawca_BankKonto)</RadzenText>
+
+        <RadzenDivider Class="rz-my-2" />
+
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Domyślne miejsce wystawienia faktury</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0 rz-font-weight-bold">@(string.IsNullOrEmpty(ConfigData.Faktura_MiejsceWystawienia) ? "-" : ConfigData.Faktura_MiejsceWystawienia)</RadzenText>
+    </RadzenCard>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-mt-2">
+        <RadzenButton Text="Zamknij" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Flat" Click="@Cancel" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public KsefIntegration3.Services.ConfigurationData ConfigData { get; set; } = new();
+
+    private void Cancel() => DialogService.Close();
+}

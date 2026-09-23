@@ -1,0 +1,248 @@
+﻿<RadzenTemplateForm TItem="Towary" Data="@model" Submit="@Save">
+    <RadzenStack Gap="1.25rem" Class="rz-p-2" Style="max-height: 80vh; overflow-y: auto;">
+
+        <!-- SEKCJA 1: NAZWA I KLASYFIKACJA -->
+        <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+            <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-primary rz-font-weight-bold rz-mb-2">
+                Informacje ogólne
+            </RadzenText>
+            <RadzenDivider Class="rz-mb-3" />
+
+            <RadzenStack Gap="1rem">
+                <div>
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Nazwa pozycji</RadzenText>
+                    <RadzenTextBox @bind-Value="@model.Nazwa" Placeholder="Wpisz nazwę" Style="width: 100%;" Name="Nazwa" />
+                </div>
+
+                <RadzenRow Gap="1rem">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Symbol PKWiU</RadzenText>
+                        <RadzenTextBox @bind-Value="@model.Kod_PKWIU" Style="width: 100%;" Name="KodPkwiu" Placeholder="62.01.1" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Jednostka miary</RadzenText>
+                        <RadzenDropDown @bind-Value="@model.Jednostka_Miary" Data="@unitOptions" Style="width: 100%;" Name="JednostkaMiary" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenStack>
+        </RadzenCard>
+
+        <!-- SEKCJA 2: CENNIK I PODATEK -->
+        <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+            <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-primary rz-font-weight-bold rz-mb-2">
+                Ceny i podatek
+            </RadzenText>
+            <RadzenDivider Class="rz-mb-3" />
+
+            <RadzenRow Gap="1rem" AlignItems="AlignItems.Center">
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Cena netto</RadzenText>
+                    <RadzenNumeric TValue="decimal?" Value="@model.Cena_Netto" ValueChanged="@OnNettoChanged" Format="N2" Style="width: 100%;" Name="CenaNetto" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Stawka VAT</RadzenText>
+                    <RadzenDropDown TValue="int?" Value="@model.Stawka_VAT" ValueChanged="@OnVatChanged" Data="@vatOptions" TextProperty="Label" ValueProperty="Value" Style="width: 100%;" Name="StawkaVat" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Cena brutto</RadzenText>
+                    <RadzenNumeric TValue="decimal?" Value="@model.Cena_Brutto" ValueChanged="@OnBruttoChanged" Format="N2" Style="width: 100%; font-weight: bold;" Name="CenaBrutto" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenCard>
+
+        <!-- PRZYCISKI AKCJI -->
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.75rem" Class="rz-mt-2">
+            <RadzenButton Text="Anuluj" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Click="@Cancel" />
+            <RadzenButton Text="Zapisz" Icon="save" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" IsBusy="@isSaving" />
+        </RadzenStack>
+
+    </RadzenStack>
+</RadzenTemplateForm>
+
+@code {
+    [Parameter] public Towary? ItemToEdit { get; set; }
+
+    @inject SkiControl.Services.LoadingService LoadingService
+
+    private Towary model = new();
+    private bool isEditMode = false;
+    private bool isSaving = false;
+
+    private class VatOption
+    {
+        public string Label { get; set; } = string.Empty;
+        public int? Value { get; set; }
+    }
+
+    private List<VatOption> vatOptions = new()
+    {
+        new VatOption { Label = "23%", Value = 23 },
+        new VatOption { Label = "8%", Value = 8 },
+        new VatOption { Label = "5%", Value = 5 },
+        new VatOption { Label = "0%", Value = 0 },
+        new VatOption { Label = "zwolniony", Value = null }
+    };
+
+    private List<string> unitOptions = new() { "szt.", "usł.", "godz.", "kg", "m", "kpl." };
+
+    protected override void OnInitialized()
+    {
+        if (ItemToEdit != null && ItemToEdit.Id > 0)
+        {
+            isEditMode = true;
+            model = new Towary
+            {
+                Id = ItemToEdit.Id,
+                Nazwa = ItemToEdit.Nazwa,
+                Cena_Netto = ItemToEdit.Cena_Netto,
+                Cena_Brutto = ItemToEdit.Cena_Brutto,
+                Stawka_VAT = ItemToEdit.Stawka_VAT,
+                Kod_Towaru = ItemToEdit.Kod_Towaru,
+                Kod_PKWIU = ItemToEdit.Kod_PKWIU,
+                Kod_PKD = ItemToEdit.Kod_PKD,
+                Status = ItemToEdit.Status,
+                Guid = ItemToEdit.Guid,
+                Rodzaj = ItemToEdit.Rodzaj,
+                Jednostka_Miary = string.IsNullOrEmpty(ItemToEdit.Jednostka_Miary) ? "szt." : ItemToEdit.Jednostka_Miary
+            };
+        }
+        else
+        {
+            isEditMode = false;
+            model = new Towary
+            {
+                Stawka_VAT = 23,
+                Status = true,
+                Rodzaj = 1,
+                Jednostka_Miary = "szt."
+            };
+        }
+
+        if ((model.Cena_Netto ?? 0) > 0 && (model.Cena_Brutto ?? 0) == 0)
+        {
+            RecalculateFromNetto();
+        }
+    }
+
+    private void OnNettoChanged(decimal? newValue)
+    {
+        model.Cena_Netto = newValue;
+        RecalculateFromNetto();
+    }
+
+    private void OnBruttoChanged(decimal? newValue)
+    {
+        model.Cena_Brutto = newValue;
+        RecalculateFromBrutto();
+    }
+
+    private void OnVatChanged(int? newVat)
+    {
+        model.Stawka_VAT = newVat;
+        RecalculateFromNetto();
+    }
+
+    private decimal GetVatMultiplier()
+    {
+        return model.Stawka_VAT switch
+        {
+            23 => 1.23m,
+            8 => 1.08m,
+            5 => 1.05m,
+            _ => 1.00m
+        };
+    }
+
+    private void RecalculateFromNetto()
+    {
+        if (!model.Cena_Netto.HasValue) return;
+        decimal multiplier = GetVatMultiplier();
+        model.Cena_Brutto = Math.Round(model.Cena_Netto.Value * multiplier, 2);
+    }
+
+    private void RecalculateFromBrutto()
+    {
+        if (!model.Cena_Brutto.HasValue) return;
+        decimal multiplier = GetVatMultiplier();
+        model.Cena_Netto = Math.Round(model.Cena_Brutto.Value / multiplier, 2);
+    }
+
+    private void Cancel() => DialogService.Close(false);
+
+    private async Task Save()
+    {
+        if (isSaving) return;
+
+        if (string.IsNullOrWhiteSpace(model.Nazwa))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Wpisz nazwę pozycji.");
+            return;
+        }
+
+        if (!model.Cena_Netto.HasValue || model.Cena_Netto.Value <= 0)
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędne dane", "Cena netto musi być większa od zera.");
+            return;
+        }
+
+        if (!model.Cena_Brutto.HasValue || model.Cena_Brutto.Value <= 0)
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędne dane", "Cena brutto musi być większa od zera.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Jednostka_Miary))
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Brakujące dane", "Wybierz jednostkę miary.");
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Kod_PKWIU))
+        {
+            bool isPkwiuValid = System.Text.RegularExpressions.Regex.IsMatch(model.Kod_PKWIU.Trim(), @"^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}(\.[0-9]{1,2})?$");
+            if (!isPkwiuValid)
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Warning, "Błędne dane", "Symbol PKWiU ma niepoprawny format.");
+                return;
+            }
+        }
+
+        isSaving = true;
+
+        try
+        {
+            await LoadingService.WrapWithDelayAsync(async () =>
+            {
+                if (isEditMode)
+                {
+                    await TowaryService.UpdateDictionaryItemAsync(model);
+                }
+                else
+                {
+                    await TowaryService.AddDictionaryItemAsync(model);
+                }
+            }, 800, isEditMode ? "Aktualizowanie pozycji w cenniku..." : "Zapisywanie nowej pozycji...");
+
+            if (isEditMode)
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Success, "Zaktualizowano", $"Zmieniono dane pozycji: {model.Nazwa}");
+            }
+            else
+            {
+                await PreferencesService.NotifyAsync(NotificationSeverity.Success, "Zapisano", $"Dodano pozycję: {model.Nazwa}");
+            }
+
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            await PreferencesService.NotifyAsync(NotificationSeverity.Error, "Błąd", ex.Message);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

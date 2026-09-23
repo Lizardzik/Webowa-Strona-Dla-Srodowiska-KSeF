@@ -1,0 +1,33 @@
+﻿@page "/"
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            LoadingService.Show("Inicjalizacja i ładowanie Ski Control...");
+
+            var settingsTask = PreferencesService.GetSettingsAsync();
+            var delayTask = Task.Delay(500);
+
+            await Task.WhenAll(settingsTask, delayTask);
+            var settings = await settingsTask;
+
+            string docelowyAdres = settings.StartupPage switch
+            {
+                "Pulpit główny" => "/pulpit",
+                "Faktury sprzedażowe" => "/faktury",
+                "Towary" => "/pozycje",
+                "Kontrahenci" => "/kontrahenci",
+
+                "/faktury" => "/faktury",
+                "/pozycje" => "/pozycje",
+                "/kontrahenci" => "/kontrahenci",
+
+                _ => "/pulpit"
+            };
+
+            NavigationManager.NavigateTo(docelowyAdres, replace: true);
+        }
+    }
+}

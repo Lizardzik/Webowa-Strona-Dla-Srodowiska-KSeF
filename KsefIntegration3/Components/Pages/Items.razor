@@ -1,0 +1,31 @@
+﻿@page "/pozycje"
+
+<PageTitle>Słownik pozycji - Ski Control</PageTitle>
+
+<RadzenStack Gap="1.5rem">
+    <PageHeader Title="Słownik pozycji"
+                Subtitle="Zarządzaj usługami i towarami na fakturach"
+                ButtonText="Dodaj pozycję"
+                ButtonIcon="add"
+                OnButtonClick="@OpenAddDialog" />
+    <ItemsTable @ref="tableRef" />
+</RadzenStack>
+
+@code {
+
+    private ItemsTable? tableRef;
+
+    private async Task OpenAddDialog()
+    {
+        var result = await DialogService.OpenAsync<ItemFormDialog>(
+            "Nowa pozycja słownika",
+            null,
+            new DialogOptions { Width = "500px" }
+        );
+
+        if (result == true && tableRef != null)
+        {
+            await tableRef.RefreshTableAsync();
+        }
+    }
+}

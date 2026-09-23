@@ -1,0 +1,64 @@
+﻿<RadzenStack Gap="1rem" Class="rz-p-2">
+    <!-- NAZWA POZYCJI -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Nazwa pozycji</RadzenText>
+        <RadzenText TextStyle="TextStyle.H6" Class="rz-m-0" Style="color: var(--rz-primary);">
+            <strong>@Item.Nazwa</strong>
+        </RadzenText>
+    </RadzenCard>
+
+    <!-- CENY NETTO I BRUTTO -->
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Cena netto</RadzenText>
+                <RadzenText TextStyle="TextStyle.H6" Class="rz-m-0">
+                    <strong>@FormatPLN(Item.Cena_Netto)</strong>
+                </RadzenText>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Cena brutto</RadzenText>
+                <RadzenText TextStyle="TextStyle.H6" Class="rz-m-0" Style="color: var(--rz-primary);">
+                    <strong>@FormatPLN(Item.Cena_Brutto)</strong>
+                </RadzenText>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- PARAMETRY PODATKOWE I MIARY -->
+    <RadzenCard Variant="Variant.Filled" Class="rz-p-3">
+        <RadzenRow Gap="1rem">
+            <RadzenColumn Size="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Stawka VAT</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0">
+                    <strong>@(Item.Stawka_VAT.HasValue ? $"{Item.Stawka_VAT}%" : "zwolniony")</strong>
+                </RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Jednostka miary</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0">
+                    <strong>@(string.IsNullOrEmpty(Item.Jednostka_Miary) ? "szt." : Item.Jednostka_Miary)</strong>
+                </RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="4">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-m-0">Symbol PKWiU</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" Class="rz-m-0">
+                    <strong>@(string.IsNullOrEmpty(Item.Kod_PKWIU) ? "-" : Item.Kod_PKWIU)</strong>
+                </RadzenText>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    <!-- PRZYCISK ZAMKNIĘCIA -->
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Class="rz-mt-2">
+        <RadzenButton Text="Zamknij" ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" Click="@(() => DialogService.Close())" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public Towary Item { get; set; } = new();
+
+    private string FormatPLN(decimal? amount) => amount.HasValue ? $"{amount.Value:N2}\u00A0zł" : "0,00\u00A0zł";
+}

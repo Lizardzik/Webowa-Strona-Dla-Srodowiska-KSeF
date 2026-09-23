@@ -1,0 +1,196 @@
+﻿<RadzenCard Class="rz-p-4">
+    <RadzenRow Gap="1rem" AlignItems="AlignItems.Center">
+        <RadzenColumn Size="12" SizeMD="4">
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Szukaj kontrahenta / numeru</RadzenText>
+            <RadzenTextBox Placeholder="np. Januszex lub FV/2026..."
+                           Value="@SearchQuery"
+                           @oninput="@OnSearchInput"
+                           Style="width: 100%;" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="@(SelectedPreset == "Zakres własny" ? 2 : 3)">
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Okres</RadzenText>
+            <RadzenDropDown TValue="string" Value="@SelectedPreset" ValueChanged="@OnPresetChanged" Data="@datePresets" Style="width: 100%;" />
+        </RadzenColumn>
+
+        @if (SelectedPreset == "Zakres własny")
+        {
+            <RadzenColumn Size="6" SizeMD="3">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Od</RadzenText>
+                <RadzenDatePicker TValue="DateTime?" Value="@DateFrom" ValueChanged="@OnDateFromChanged" DateFormat="yyyy-MM-dd" Style="width: 100%;" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="6" SizeMD="3">
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-text-secondary rz-mb-1">Do</RadzenText>
+                <RadzenDatePicker TValue="DateTime?" Value="@DateTo" ValueChanged="@OnDateToChanged" DateFormat="yyyy-MM-dd" Style="width: 100%;" />
+            </RadzenColumn>
+        }
+    </RadzenRow>
+
+    <RadzenRow Gap="1rem" AlignItems="AlignItems.Center" Class="rz-mt-3">
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1.5rem">
+                    <div class="rz-d-flex rz-align-items-center">
+                        <RadzenCheckBox TValue="bool" Value="@OnlyCorrections" ValueChanged="@(async (bool val) => await ToggleCorrections(val))" Name="corrCheck" />
+                        <RadzenLabel Text="Tylko korekty" Component="corrCheck" Class="rz-ms-2" Style="white-space: nowrap; cursor: pointer;" />
+                    </div>
+
+                    <div class="rz-d-flex rz-align-items-center">
+                        <RadzenCheckBox TValue="bool" Value="@OnlyUnpaid" ValueChanged="@(async (bool val) => await ToggleUnpaid(val))" Name="unpaidCheck" />
+                        <RadzenLabel Text="Do zapłaty" Component="unpaidCheck" Class="rz-ms-2" Style="white-space: nowrap; cursor: pointer;" />
+                    </div>
+                </RadzenStack>
+
+                @if (IsAnyFilterActive)
+                {
+                    <RadzenButton Text="Wyczyść filtry" Icon="filter_alt_off" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@ResetFilters" />
+                }
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenCard>
+
+@code {
+    [Parameter] public string SearchQuery { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SearchQueryChanged { get; set; }
+
+    [Parameter] public string SelectedPreset { get; set; } = "Wszystkie";
+    [Parameter] public EventCallback<string> SelectedPresetChanged { get; set; }
+
+    [Parameter] public DateTime? DateFrom { get; set; }
+    [Parameter] public DateTime? DateTo { get; set; }
+    [Parameter] public EventCallback<DateTime?> DateFromChanged { get; set; }
+    [Parameter] public EventCallback<DateTime?> DateToChanged { get; set; }
+
+    [Parameter] public bool OnlyCorrections { get; set; }
+    [Parameter] public EventCallback<bool> OnlyCorrectionsChanged { get; set; }
+
+    [Parameter] public bool OnlyUnpaid { get; set; }
+    [Parameter] public EventCallback<bool> OnlyUnpaidChanged { get; set; }
+
+    [Parameter] public EventCallback OnFilterChanged { get; set; }
+
+    private List<string> datePresets = new()
+    {
+        "Wszystkie",
+        "Ten miesiąc",
+        "Ten rok",
+        "Zakres własny"
+    };
+
+    public void RefreshUI()
+    {
+        StateHasChanged();
+    }
+
+    private bool IsAnyFilterActive => !string.IsNullOrWhiteSpace(SearchQuery) ||
+                                       SelectedPreset != "Wszystkie" ||
+                                       OnlyCorrections ||
+                                       OnlyUnpaid ||
+                                       DateFrom.HasValue ||
+                                       DateTo.HasValue;
+
+    private System.Timers.Timer? searchDebounceTimer;
+
+    private void OnSearchInput(ChangeEventArgs args)
+    {
+        var val = args.Value?.ToString() ?? string.Empty;
+        SearchQuery = val;
+
+        searchDebounceTimer?.Stop();
+        searchDebounceTimer?.Dispose();
+
+        searchDebounceTimer = new System.Timers.Timer(350);
+        searchDebounceTimer.AutoReset = false;
+        searchDebounceTimer.Elapsed += async (s, e) =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await SearchQueryChanged.InvokeAsync(SearchQuery);
+                await OnFilterChanged.InvokeAsync();
+            });
+        };
+        searchDebounceTimer.Start();
+    }
+
+    private async Task OnPresetChanged(string preset)
+    {
+        SelectedPreset = preset;
+        await SelectedPresetChanged.InvokeAsync(preset);
+
+        var now = DateTime.Now;
+        if (preset == "Wszystkie")
+        {
+            DateFrom = null;
+            DateTo = null;
+        }
+        else if (preset == "Ten miesiąc")
+        {
+            DateFrom = new DateTime(now.Year, now.Month, 1);
+            DateTo = DateFrom.Value.AddMonths(1).AddDays(-1);
+        }
+        else if (preset == "Ten rok")
+        {
+            DateFrom = new DateTime(now.Year, 1, 1);
+            DateTo = new DateTime(now.Year, 12, 31);
+        }
+
+        await DateFromChanged.InvokeAsync(DateFrom);
+        await DateToChanged.InvokeAsync(DateTo);
+        await OnFilterChanged.InvokeAsync();
+    }
+
+    private async Task OnDateFromChanged(DateTime? date)
+    {
+        DateFrom = date;
+        await DateFromChanged.InvokeAsync(date);
+        await OnFilterChanged.InvokeAsync();
+    }
+
+    private async Task OnDateToChanged(DateTime? date)
+    {
+        DateTo = date;
+        await DateToChanged.InvokeAsync(date);
+        await OnFilterChanged.InvokeAsync();
+    }
+
+    private async Task ToggleCorrections(bool val)
+    {
+        if (OnlyCorrections != val)
+        {
+            OnlyCorrections = val;
+            await OnlyCorrectionsChanged.InvokeAsync(val);
+            await OnFilterChanged.InvokeAsync();
+        }
+    }
+
+    private async Task ToggleUnpaid(bool val)
+    {
+        if (OnlyUnpaid != val)
+        {
+            OnlyUnpaid = val;
+            await OnlyUnpaidChanged.InvokeAsync(val);
+            await OnFilterChanged.InvokeAsync();
+        }
+    }
+
+    private async Task ResetFilters()
+    {
+        SearchQuery = string.Empty;
+        SelectedPreset = "Wszystkie";
+        DateFrom = null;
+        DateTo = null;
+        OnlyCorrections = false;
+        OnlyUnpaid = false;
+
+        await SearchQueryChanged.InvokeAsync(SearchQuery);
+        await SelectedPresetChanged.InvokeAsync(SelectedPreset);
+        await DateFromChanged.InvokeAsync(DateFrom);
+        await DateToChanged.InvokeAsync(DateTo);
+        await OnlyCorrectionsChanged.InvokeAsync(OnlyCorrections);
+        await OnlyUnpaidChanged.InvokeAsync(OnlyUnpaid);
+
+        await OnFilterChanged.InvokeAsync();
+    }
+}
